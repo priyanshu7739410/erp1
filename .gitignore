@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual Environment
+venv/
+.env/
+
+# Database
+*.db
+
+# VS Code
+.vscode/
+
+# Environment Variables
+.env
+
+# Alembic cache
+alembic/__pycache__/
+
+# OS files
+.DS_Store
