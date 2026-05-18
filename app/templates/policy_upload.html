@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Policy Document{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 700px; margin: 0 auto;">
+    <h1 style="margin-bottom: 0.5rem; color: var(--accent);">Upload Patient Policy Document</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Rule-based local NLP extraction pipeline for free policy reading & indexing</p>
+
+    <form action="/insurance/upload" method="post">
+        <div class="form-group">
+            <label for="patient_id" class="form-label">Select Patient *</label>
+            <select id="patient_id" name="patient_id" class="form-control" required>
+                {% for p in patients %}
+                <option value="{{ p.id }}">#{{ p.id }} - {{ p.name }} ({{ p.phone }})</option>
+                {% else %}
+                <option value="" disabled>No active patients found.</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="policy_text" class="form-label">Paste Raw Policy Document Clauses or Summary *</label>
+            <textarea id="policy_text" name="policy_text" class="form-control" rows="10" required placeholder="Provider: Blue Shield Health&#10;Policy Number: POL-998234&#10;Deductible: $500&#10;Copay: 20%&#10;Exclusions: Dental, Cosmetic surgery, Experimental treatments..."></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+            <a href="/insurance/warnings" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary" style="padding: 0.8rem 2rem;">Extract & Save Policy</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

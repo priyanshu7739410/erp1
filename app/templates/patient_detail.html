@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Patient #{{ patient.id }} - {{ patient.name }}{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <a href="/patients" style="color: var(--accent); text-decoration: none; font-weight: 600;">← Back to Patients</a>
+        <h1 style="font-size: 2.2rem; font-weight: 700; margin-top: 0.5rem;">{{ patient.name }}</h1>
+        <p style="color: var(--text-secondary);">Patient ID #{{ patient.id }} | Registered on {{ patient.created_at.strftime('%B %d, %Y') }}</p>
+    </div>
+    <div>
+        <a href="/appointments/new?patient_id={{ patient.id }}" class="btn btn-primary">+ Book Appointment</a>
+    </div>
+</div>
+
+<div class="grid" style="grid-template-columns: 1fr 2fr;">
+    <div class="card">
+        <h2 style="margin-bottom: 1.25rem; color: var(--accent);">Demographics</h2>
+        <div style="margin-bottom: 1rem;">
+            <label style="color: var(--text-secondary); font-size: 0.85rem;">Age / Gender</label>
+            <p style="font-size: 1.1rem; font-weight: 600;">{{ patient.age }} years old, {{ patient.gender }}</p>
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <label style="color: var(--text-secondary); font-size: 0.85rem;">Phone Number</label>
+            <p style="font-size: 1.1rem; font-weight: 600;">{{ patient.phone }}</p>
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <label style="color: var(--text-secondary); font-size: 0.85rem;">Email Address</label>
+            <p style="font-size: 1.1rem; font-weight: 600;">{{ patient.email or 'N/A' }}</p>
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <label style="color: var(--text-secondary); font-size: 0.85rem;">Physical Address</label>
+            <p style="font-size: 1.1rem; font-weight: 600;">{{ patient.address or 'N/A' }}</p>
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <label style="color: var(--text-secondary); font-size: 0.85rem;">Emergency Contact</label>
+            <p style="font-size: 1.1rem; font-weight: 600; color: var(--warning);">{{ patient.emergency_contact or 'N/A' }}</p>
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <label style="color: var(--text-secondary); font-size: 0.85rem;">Insurance Provider</label>
+            <p style="font-size: 1.1rem; font-weight: 600; color: var(--success);">{{ patient.insurance_provider or 'Self-Pay / Uninsured' }}</p>
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <h2 style="margin-bottom: 1.25rem; color: var(--accent);">Medical History Summary</h2>
+            <p style="font-size: 1.05rem; line-height: 1.6; color: var(--text-primary);">
+                {{ patient.medical_history_summary or 'No significant prior medical history reported on registration.' }}
+            </p>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                <h2 style="color: var(--accent);">Clinical Encounters & Records</h2>
+                <a href="/medical-records/new?patient_id={{ patient.id }}" class="btn btn-secondary" style="font-size: 0.85rem;">+ Add Record</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Doctor ID</th>
+                            <th>Diagnosis</th>
+                            <th>Treatment Plan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rec in records %}
+                        <tr>
+                            <td>{{ rec.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td><strong>Doc #{{ rec.doctor_id }}</strong></td>
+                            <td style="font-weight: 600;">{{ rec.diagnosis }}</td>
+                            <td>{{ rec.treatment_plan or 'None specified' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">No medical encounter records found for this patient.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

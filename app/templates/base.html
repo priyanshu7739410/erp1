@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Hospital ERP{% endblock %} - Premium Healthcare Portal</title>
+    <meta name="description" content="Next-generation autonomous Hospital Enterprise Resource Planning system">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 10L12 3 5 10m7-7v18"/></svg>
+            MediCloud ERP
+        </a>
+        <ul class="navbar-nav">
+            {% if user %}
+            <li><a href="/" class="nav-link">Dashboard</a></li>
+            {% if user.role == 'patient' %}
+            <li><a href="/doctors" class="nav-link">Doctors</a></li>
+            <li><a href="/appointments" class="nav-link">My Visits</a></li>
+            <li><a href="/billing" class="nav-link">My Bills</a></li>
+            <li><a href="/insurance/warnings" class="nav-link">Insurance</a></li>
+            {% elif user.role == 'doctor' %}
+            <li><a href="/patients" class="nav-link">Patients</a></li>
+            <li><a href="/appointments" class="nav-link">Schedule</a></li>
+            <li><a href="/inventory" class="nav-link">Pharmacy</a></li>
+            {% else %}
+            <li><a href="/patients" class="nav-link">Patients</a></li>
+            <li><a href="/doctors" class="nav-link">Doctors</a></li>
+            <li><a href="/appointments" class="nav-link">Appointments</a></li>
+            <li><a href="/billing" class="nav-link">Billing</a></li>
+            <li><a href="/insurance" class="nav-link">Insurance</a></li>
+            <li><a href="/inventory" class="nav-link">Pharmacy</a></li>
+            {% endif %}
+            <li><span class="nav-link" style="color: var(--accent); font-weight: 700;">{{ user.username }} ({{ user.role }})</span></li>
+            <li><a href="/logout" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">Logout</a></li>
+            {% else %}
+            <li><a href="/login" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">Login</a></li>
+            <li><a href="/register" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">Register</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <div class="container">
+        {% if message %}
+        <div class="card" style="background: rgba(16, 185, 129, 0.1); border-color: var(--success); margin-bottom: 1rem;">
+            <p style="color: var(--success); font-weight: 600;">{{ message }}</p>
+        </div>
+        {% endif %}
+        {% if error %}
+        <div class="card" style="background: rgba(239, 68, 68, 0.1); border-color: var(--danger); margin-bottom: 1rem;">
+            <p style="color: var(--danger); font-weight: 600;">{{ error }}</p>
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

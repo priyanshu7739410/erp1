@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Write Prescription{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 650px; margin: 0 auto;">
+    <h1 style="margin-bottom: 0.5rem; color: var(--accent);">Write E-Prescription</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Issue a clinical prescription to be dispensed by hospital pharmacy</p>
+
+    <form action="/prescriptions/new" method="post">
+        <div class="form-group">
+            <label for="patient_id" class="form-label">Select Patient *</label>
+            <select id="patient_id" name="patient_id" class="form-control" required>
+                {% for p in patients %}
+                <option value="{{ p.id }}">#{{ p.id }} - {{ p.name }} ({{ p.phone }})</option>
+                {% else %}
+                <option value="" disabled>No active patients found.</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="doctor_id" class="form-label">Select Prescribing Physician *</label>
+            <select id="doctor_id" name="doctor_id" class="form-control" required>
+                {% for d in doctors %}
+                <option value="{{ d.id }}">Dr. {{ d.first_name }} {{ d.last_name }} ({{ d.specialty }})</option>
+                {% else %}
+                <option value="" disabled>No active doctors found.</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="medication_name" class="form-label">Medication Name *</label>
+            <input type="text" id="medication_name" name="medication_name" class="form-control" required placeholder="e.g. Amoxicillin 500mg">
+        </div>
+
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+            <div class="form-group">
+                <label for="dosage" class="form-label">Dosage Instructions *</label>
+                <input type="text" id="dosage" name="dosage" class="form-control" required placeholder="1 capsule (500mg)">
+            </div>
+            <div class="form-group">
+                <label for="frequency" class="form-label">Frequency *</label>
+                <input type="text" id="frequency" name="frequency" class="form-control" required placeholder="3 times a day with meals">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="duration_days" class="form-label">Duration (Days) *</label>
+            <input type="number" id="duration_days" name="duration_days" class="form-control" required min="1" max="365" value="7">
+        </div>
+
+        <div class="form-group">
+            <label for="notes" class="form-label">Special Pharmacy Dispensing Notes</label>
+            <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="Take with plenty of water..."></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+            <a href="/inventory" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary" style="padding: 0.8rem 2rem;">Issue E-Prescription</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Overview{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <h1 style="font-size: 2.2rem; font-weight: 700; color: #fff;">Hospital Operational Dashboard</h1>
+        <p style="color: var(--text-secondary); margin-top: 0.25rem;">Real-time clinical, financial, and pharmaceutical insights</p>
+    </div>
+    <div>
+        <a href="/patients/new" class="btn btn-primary">+ Register Patient</a>
+        <a href="/appointments/new" class="btn btn-secondary">+ Book Appointment</a>
+    </div>
+</div>
+
+<div class="grid">
+    <div class="card" style="border-left: 4px solid var(--accent);">
+        <h3 style="color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Active Patients</h3>
+        <p style="font-size: 2.5rem; font-weight: 700; margin-top: 0.5rem; color: #fff;">{{ stats.patients_count }}</p>
+        <p style="font-size: 0.85rem; color: var(--success); margin-top: 0.5rem;">● Ready for consultations</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--success);">
+        <h3 style="color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Doctors on Shift</h3>
+        <p style="font-size: 2.5rem; font-weight: 700; margin-top: 0.5rem; color: #fff;">{{ stats.doctors_count }}</p>
+        <p style="font-size: 0.85rem; color: var(--success); margin-top: 0.5rem;">● All departments online</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--warning);">
+        <h3 style="color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Today's Appointments</h3>
+        <p style="font-size: 2.5rem; font-weight: 700; margin-top: 0.5rem; color: #fff;">{{ stats.appointments_count }}</p>
+        <p style="font-size: 0.85rem; color: var(--warning); margin-top: 0.5rem;">● Scheduled & checked in</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--danger);">
+        <h3 style="color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Pending Invoices</h3>
+        <p style="font-size: 2.5rem; font-weight: 700; margin-top: 0.5rem; color: #fff;">${{ stats.pending_revenue }}</p>
+        <p style="font-size: 0.85rem; color: var(--danger); margin-top: 0.5rem;">● Awaiting payment capture</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>Recent Appointments</h2>
+            <a href="/appointments" style="color: var(--accent); text-decoration: none; font-size: 0.9rem; font-weight: 600;">View All →</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Patient</th>
+                        <th>Doctor</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appt in recent_appointments %}
+                    <tr>
+                        <td style="font-weight: 600;">Patient #{{ appt.patient_id }}</td>
+                        <td>Doc #{{ appt.doctor_id }}</td>
+                        <td>{{ appt.scheduled_start.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td><span class="badge badge-primary">{{ appt.status }}</span></td>
+                        <td><a href="/appointments/{{ appt.id }}" class="btn btn-secondary" style="padding: 0.2rem 0.6rem; font-size: 0.8rem;">Details</a></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No appointments scheduled for today.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 style="margin-bottom: 1rem;">Insurance Risks & Warnings</h2>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            {% for review in recent_warnings %}
+            <div style="padding: 1rem; border-radius: 12px; background: rgba(245, 158, 11, 0.1); border: 1px solid var(--warning);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-weight: 700; color: var(--warning);">Appt #{{ review.appointment_id }}</span>
+                    <span class="badge badge-warning">{{ review.status }}</span>
+                </div>
+                <p style="font-size: 0.9rem; color: var(--text-primary); margin-bottom: 0.5rem;">{{ review.coverage_issue }}</p>
+                <a href="/insurance/warnings" style="font-size: 0.85rem; color: var(--accent); text-decoration: none; font-weight: 600;">Review Actions →</a>
+            </div>
+            {% else %}
+            <p style="color: var(--success); font-weight: 600; text-align: center; padding: 2rem 0;">✓ All upcoming appointments have verified insurance coverage.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

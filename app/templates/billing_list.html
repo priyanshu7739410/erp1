@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Hospital Billing & Invoicing{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <h1 style="font-size: 2.2rem; font-weight: 700;">Financial Invoices & Payments</h1>
+        <p style="color: var(--text-secondary);">Track patient bills, insurance reconciliations, and payment captures</p>
+    </div>
+</div>
+
+<div class="grid" style="grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+    <div class="card">
+        <h2 style="margin-bottom: 1.25rem;">Active Invoices</h2>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Inv #</th>
+                        <th>Patient ID</th>
+                        <th>Inv Date</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in invoices %}
+                    <tr>
+                        <td><strong>#{{ inv.id }}</strong></td>
+                        <td style="font-weight: 600;">Patient #{{ inv.patient_id }}</td>
+                        <td>{{ inv.invoice_date.strftime('%Y-%m-%d') }}</td>
+                        <td style="font-weight: 700;">${{ "%.2f"|format(inv.total_amount) }}</td>
+                        <td>
+                            <span class="badge {% if inv.status == 'paid' %}badge-success{% elif inv.status == 'partially_paid' %}badge-primary{% else %}badge-warning{% endif %}">
+                                {{ inv.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="/billing/invoices/{{ inv.id }}" class="btn btn-secondary" style="padding: 0.2rem 0.6rem; font-size: 0.8rem;">View</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No invoices generated.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 style="margin-bottom: 1.25rem;">Capture Payment</h2>
+        <form action="/billing/payments" method="post">
+            <div class="form-group">
+                <label for="invoice_id" class="form-label">Invoice ID *</label>
+                <input type="number" id="invoice_id" name="invoice_id" class="form-control" required placeholder="e.g. 101">
+            </div>
+            <div class="form-group">
+                <label for="amount_paid" class="form-label">Amount Paid ($) *</label>
+                <input type="number" step="0.01" id="amount_paid" name="amount_paid" class="form-control" required placeholder="150.00">
+            </div>
+            <div class="form-group">
+                <label for="method" class="form-label">Payment Method *</label>
+                <select id="method" name="method" class="form-control">
+                    <option value="Credit Card">Credit Card</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Insurance Claim">Insurance Claim</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="reference_number" class="form-label">Transaction Reference #</label>
+                <input type="text" id="reference_number" name="reference_number" class="form-control" placeholder="TX-998234-A">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.8rem; margin-top: 0.5rem;">Record Payment</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

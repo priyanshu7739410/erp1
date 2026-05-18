@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Register Account{% endblock %}
+
+{% block content %}
+<div class="card auth-card">
+    <h1 style="text-align: center; margin-bottom: 0.5rem; color: var(--accent);">Create Account</h1>
+    <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">Join MediCloud Hospital ERP</p>
+
+    <form action="/register" method="post">
+        <div class="form-group">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" id="username" name="username" class="form-control" required placeholder="Choose a username">
+        </div>
+        <div class="form-group">
+            <label for="email" class="form-label">Email Address</label>
+            <input type="email" id="email" name="email" class="form-control" required placeholder="Enter your email">
+        </div>
+        <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" id="password" name="password" class="form-control" required placeholder="Create a strong password">
+        </div>
+        <div class="form-group">
+            <label for="role" class="form-label">Account Role</label>
+            <select id="role" name="role" class="form-control">
+                <option value="patient">Patient (Portal Access)</option>
+                <option value="receptionist">Receptionist</option>
+                <option value="doctor">Doctor</option>
+                <option value="nurse">Nurse</option>
+                <option value="pharmacist">Pharmacist</option>
+                <option value="billing_officer">Billing Officer</option>
+                <option value="admin">Administrator</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; padding: 0.8rem;">Register Account</button>
+    </form>
+    
+    <div style="text-align: center; margin-top: 1.5rem;">
+        <p style="color: var(--text-secondary);">Already have an account? <a href="/login" style="color: var(--accent); text-decoration: none; font-weight: 600;">Login here</a></p>
+    </div>
+</div>
+{% endblock %}

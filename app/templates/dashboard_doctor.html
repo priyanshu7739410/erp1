@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Physician Clinical Dashboard{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <h1 style="font-size: 2.2rem; font-weight: 700; color: #fff;">Physician Clinical Portal — Welcome, Dr. {{ user.username }}</h1>
+        <p style="color: var(--text-secondary); margin-top: 0.25rem;">Shift schedule, clinical documentation, and e-prescribing center</p>
+    </div>
+    <div style="display: flex; gap: 1rem;">
+        <a href="/prescriptions/new" class="btn btn-primary">+ Write E-Prescription</a>
+        <a href="/medical-records/new" class="btn btn-secondary">+ Log Patient Encounter</a>
+    </div>
+</div>
+
+<div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2.5rem;">
+    <div class="card" style="border-left: 4px solid var(--accent);">
+        <h3 style="color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">My Assigned Patients</h3>
+        <p style="font-size: 2.5rem; font-weight: 700; margin-top: 0.5rem; color: #fff;">{{ stats.my_patients_count }}</p>
+        <p style="font-size: 0.85rem; color: var(--success); margin-top: 0.5rem;">● Under active clinical care</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--warning);">
+        <h3 style="color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Scheduled Consultations</h3>
+        <p style="font-size: 2.5rem; font-weight: 700; margin-top: 0.5rem; color: #fff;">{{ stats.my_appointments_count }}</p>
+        <p style="font-size: 0.85rem; color: var(--warning); margin-top: 0.5rem;">● Shift bookings today</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--success);">
+        <h3 style="color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Completed Encounters</h3>
+        <p style="font-size: 2.5rem; font-weight: 700; margin-top: 0.5rem; color: #fff;">{{ stats.completed_consultations }}</p>
+        <p style="font-size: 0.85rem; color: var(--success); margin-top: 0.5rem;">● Fully documented visits</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>My Consultation Schedule</h2>
+            <a href="/appointments" style="color: var(--accent); text-decoration: none; font-size: 0.9rem; font-weight: 600;">Full Calendar →</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Patient ID</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Reason for Visit</th>
+                        <th>Clinical Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appt in appointments %}
+                    <tr>
+                        <td style="font-weight: 600;">Patient #{{ appt.patient_id }}</td>
+                        <td>{{ appt.scheduled_start.strftime('%H:%M - %b %d') }}</td>
+                        <td>
+                            <span class="badge {% if appt.status == 'completed' %}badge-success{% elif appt.status == 'scheduled' %}badge-primary{% else %}badge-warning{% endif %}">
+                                {{ appt.status }}
+                            </span>
+                        </td>
+                        <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ appt.reason or 'Routine' }}</td>
+                        <td>
+                            <a href="/appointments/{{ appt.id }}" class="btn btn-secondary" style="padding: 0.2rem 0.6rem; font-size: 0.8rem;">Open Chart</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No appointments on your schedule.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 style="margin-bottom: 1rem;">Clinical Tools & Pharmacy</h2>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div style="padding: 1.25rem; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border);">
+                <h3 style="font-size: 1.1rem; color: var(--accent); margin-bottom: 0.5rem;">E-Prescribing System</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Directly transmit medication dosage orders to the automated hospital pharmacy dispensing unit.</p>
+                <a href="/prescriptions/new" class="btn btn-primary" style="display: block; text-align: center; padding: 0.6rem; font-size: 0.9rem;">Issue E-Prescription</a>
+            </div>
+            <div style="padding: 1.25rem; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border);">
+                <h3 style="font-size: 1.1rem; color: var(--warning); margin-bottom: 0.5rem;">Insurance Review Portal</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Verify patient policy coverage rules, pre-authorization exclusions, and network status.</p>
+                <a href="/insurance/warnings" class="btn btn-secondary" style="display: block; text-align: center; padding: 0.6rem; font-size: 0.9rem;">Check Coverage Rules</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

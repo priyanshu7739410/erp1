@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Clinical Encounter Note{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h1 style="margin-bottom: 0.5rem; color: var(--accent);">Complete Clinical Encounter</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Record patient consultation notes, diagnosis, and treatment plan</p>
+
+    <form action="/medical-records/new" method="post">
+        <input type="hidden" name="appointment_id" value="{{ appointment_id or '' }}">
+        
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+            <div class="form-group">
+                <label for="patient_id" class="form-label">Patient ID *</label>
+                <input type="number" id="patient_id" name="patient_id" class="form-control" value="{{ patient_id or '' }}" required readonly>
+            </div>
+            <div class="form-group">
+                <label for="doctor_id" class="form-label">Attending Doctor ID *</label>
+                <input type="number" id="doctor_id" name="doctor_id" class="form-control" value="{{ doctor_id or '' }}" required readonly>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="diagnosis" class="form-label">Primary Diagnosis (ICD-10 / Narrative) *</label>
+            <input type="text" id="diagnosis" name="diagnosis" class="form-control" required placeholder="Acute bronchitis / Essential hypertension...">
+        </div>
+
+        <div class="form-group">
+            <label for="notes" class="form-label">Clinical Encounter Notes & Symptoms</label>
+            <textarea id="notes" name="notes" class="form-control" rows="5" placeholder="Patient presented with cough and mild fever for 3 days..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="treatment_plan" class="form-label">Recommended Treatment & Care Plan</label>
+            <textarea id="treatment_plan" name="treatment_plan" class="form-control" rows="4" placeholder="Prescribe Amoxicillin 500mg tid x 7 days, rest, hydration..."></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+            <a href="/appointments" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary" style="padding: 0.8rem 2rem;">Save Clinical Record & Complete Appointment</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

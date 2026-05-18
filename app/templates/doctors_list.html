@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Medical Staff & Doctors{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <h1 style="font-size: 2.2rem; font-weight: 700;">Attending Physicians & Specialists</h1>
+        <p style="color: var(--text-secondary);">Browse hospital clinical staff and specialties</p>
+    </div>
+    {% if user and user.role == 'admin' %}
+    <a href="/doctors/new" class="btn btn-primary">+ Add Doctor</a>
+    {% endif %}
+</div>
+
+<div class="grid">
+    {% for doc in doctors %}
+    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.35rem; color: var(--accent); font-weight: 700;">Dr. {{ doc.first_name }} {{ doc.last_name }}</h3>
+                <span class="badge badge-success">Active</span>
+            </div>
+            <p style="font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 0.5rem;">Specialty: {{ doc.specialty }}</p>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.25rem;">License: {{ doc.license_number }}</p>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Phone: {{ doc.phone }}</p>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">Email: {{ doc.email }}</p>
+        </div>
+        <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+            <a href="/appointments/new?doctor_id={{ doc.id }}" class="btn btn-primary" style="width: 100%; text-align: center;">Book Consultation</a>
+        </div>
+    </div>
+    {% else %}
+    <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 4rem;">
+        <p style="color: var(--text-secondary); font-size: 1.2rem;">No attending doctors listed currently.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

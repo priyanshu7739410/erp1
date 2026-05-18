@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Insurance Optimization & Warnings{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <h1 style="font-size: 2.2rem; font-weight: 700;">Insurance Optimization & Policy Reviews</h1>
+        <p style="color: var(--text-secondary);">Pre-appointment claim validation, network checks, and coverage risk management</p>
+    </div>
+    <a href="/insurance/upload" class="btn btn-primary">+ Upload Policy Document</a>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <form action="/insurance/warnings" method="get" style="display: flex; gap: 1rem; align-items: center;">
+        <div style="flex: 1;">
+            <label class="form-label" style="font-size: 0.85rem;">Filter Review Status</label>
+            <select name="status" class="form-control">
+                <option value="flagged" {% if status_filter == 'flagged' %}selected{% endif %}>Flagged Warnings</option>
+                <option value="denied" {% if status_filter == 'denied' %}selected{% endif %}>Denied Risk</option>
+                <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved Coverage</option>
+            </select>
+        </div>
+        <div style="align-self: flex-end;">
+            <button type="submit" class="btn btn-primary" style="padding: 0.8rem 1.5rem;">Filter Reviews</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Review ID</th>
+                    <th>Appt ID</th>
+                    <th>Patient ID</th>
+                    <th>Status</th>
+                    <th>Coverage Issue Detected</th>
+                    <th>Recommended Actions</th>
+                    <th>Est. Patient Cost</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rev in reviews %}
+                <tr>
+                    <td><strong>#{{ rev.id }}</strong></td>
+                    <td style="font-weight: 600;">Appt #{{ rev.appointment_id }}</td>
+                    <td>Patient #{{ rev.patient_id }}</td>
+                    <td>
+                        <span class="badge {% if rev.status == 'approved' %}badge-success{% elif rev.status == 'flagged' %}badge-warning{% else %}badge-danger{% endif %}">
+                            {{ rev.status }}
+                        </span>
+                    </td>
+                    <td class="{% if rev.status == 'approved' %}text-normal{% else %}text-warning{% endif %}" style="font-weight: 500;">
+                        {{ rev.coverage_issue or 'None' }}
+                    </td>
+                    <td style="font-size: 0.9rem;">{{ rev.recommended_actions or 'None' }}</td>
+                    <td style="font-weight: 700; color: var(--accent);">${{ "%.2f"|format(rev.estimated_patient_cost) }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-secondary);">No insurance reviews found for this filter.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

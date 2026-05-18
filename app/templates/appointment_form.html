@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Book Consultation{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 650px; margin: 0 auto;">
+    <h1 style="margin-bottom: 0.5rem; color: var(--accent);">Schedule Appointment</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Book a consultation with an attending physician</p>
+
+    <form action="/appointments/new" method="post">
+        <div class="form-group">
+            <label for="patient_id" class="form-label">Select Patient *</label>
+            <select id="patient_id" name="patient_id" class="form-control" required>
+                {% for p in patients %}
+                <option value="{{ p.id }}" {% if selected_patient_id == p.id %}selected{% endif %}>#{{ p.id }} - {{ p.name }} ({{ p.phone }})</option>
+                {% else %}
+                <option value="" disabled>No active patients found. Register patient first.</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="doctor_id" class="form-label">Select Attending Physician *</label>
+            <select id="doctor_id" name="doctor_id" class="form-control" required>
+                {% for d in doctors %}
+                <option value="{{ d.id }}" {% if selected_doctor_id == d.id %}selected{% endif %}>Dr. {{ d.first_name }} {{ d.last_name }} ({{ d.specialty }})</option>
+                {% else %}
+                <option value="" disabled>No active doctors found.</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+            <div class="form-group">
+                <label for="scheduled_start" class="form-label">Start Date & Time *</label>
+                <input type="datetime-local" id="scheduled_start" name="scheduled_start" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="duration_minutes" class="form-label">Duration *</label>
+                <select id="duration_minutes" name="duration_minutes" class="form-control">
+                    <option value="30">30 Minutes (Standard)</option>
+                    <option value="60">60 Minutes (Comprehensive)</option>
+                    <option value="15">15 Minutes (Follow-up)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="reason" class="form-label">Reason for Visit</label>
+            <input type="text" id="reason" name="reason" class="form-control" placeholder="Annual physical, back pain, follow-up...">
+        </div>
+
+        <div class="form-group">
+            <label for="notes" class="form-label">Additional Scheduling Notes</label>
+            <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="Requires wheelchair accessibility..."></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+            <a href="/appointments" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary" style="padding: 0.8rem 2rem;">Confirm Booking</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

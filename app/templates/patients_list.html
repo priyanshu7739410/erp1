@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Directory{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <h1 style="font-size: 2.2rem; font-weight: 700;">Patient Directory</h1>
+        <p style="color: var(--text-secondary);">Manage hospital patients and medical histories</p>
+    </div>
+    <a href="/patients/new" class="btn btn-primary">+ Register New Patient</a>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <form action="/patients" method="get" style="display: flex; gap: 1rem;">
+        <input type="text" name="q" value="{{ query or '' }}" placeholder="Search by patient name, email, or phone..." class="form-control" style="flex: 1;">
+        <button type="submit" class="btn btn-primary">Search</button>
+        {% if query %}
+        <a href="/patients" class="btn btn-secondary">Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Age/Gender</th>
+                    <th>Contact Info</th>
+                    <th>Insurance Provider</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for patient in patients %}
+                <tr>
+                    <td><strong>#{{ patient.id }}</strong></td>
+                    <td style="font-weight: 600;">{{ patient.name }}</td>
+                    <td>{{ patient.age }} yrs / {{ patient.gender }}</td>
+                    <td>
+                        <div>{{ patient.phone }}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">{{ patient.email or 'No email' }}</div>
+                    </td>
+                    <td>{{ patient.insurance_provider or 'Self-Pay' }}</td>
+                    <td><span class="badge badge-success">Active</span></td>
+                    <td style="display: flex; gap: 0.5rem;">
+                        <a href="/patients/{{ patient.id }}" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.85rem;">View Profile</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-secondary);">No patients found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

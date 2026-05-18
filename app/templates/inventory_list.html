@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Hospital Pharmacy & Inventory{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <h1 style="font-size: 2.2rem; font-weight: 700;">Pharmacy Inventory & Prescriptions</h1>
+        <p style="color: var(--text-secondary);">Manage medication stock levels, dispensing, reorder alerts, and purchase orders</p>
+    </div>
+    <div style="display: flex; gap: 1rem;">
+        <a href="/inventory/new" class="btn btn-primary">+ Add Inventory Item</a>
+        <a href="/prescriptions/new" class="btn btn-secondary">+ Write Prescription</a>
+    </div>
+</div>
+
+<div class="grid" style="grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h2>Inventory Items</h2>
+            <form action="/inventory" method="get" style="display: flex; gap: 0.5rem;">
+                <select name="category" class="form-control" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onchange="this.form.submit()">
+                    <option value="">All Categories</option>
+                    <option value="medication" {% if category_filter == 'medication' %}selected{% endif %}>Medications</option>
+                    <option value="surgical" {% if category_filter == 'surgical' %}selected{% endif %}>Surgical Supplies</option>
+                    <option value="consumable" {% if category_filter == 'consumable' %}selected{% endif %}>Consumables</option>
+                </select>
+            </form>
+        </div>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Stock / Unit</th>
+                        <th>Reorder Alert</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td><strong>{{ item.sku }}</strong></td>
+                        <td style="font-weight: 600;">{{ item.name }}</td>
+                        <td style="text-transform: capitalize;">{{ item.category }}</td>
+                        <td>
+                            <span class="{% if item.quantity <= item.reorder_level %}text-danger{% else %}text-success{% endif %}" style="font-weight: 700;">
+                                {{ item.quantity }}
+                            </span> / {{ item.unit }}
+                        </td>
+                        <td>
+                            {% if item.quantity <= item.reorder_level %}
+                            <span class="badge badge-danger">Low Stock (≤{{ item.reorder_level }})</span>
+                            {% else %}
+                            <span class="badge badge-success">Optimal</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="/inventory/{{ item.id }}" class="btn btn-secondary" style="padding: 0.2rem 0.6rem; font-size: 0.8rem;">Stock Op</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No inventory items found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 style="margin-bottom: 1.25rem;">Recent Prescriptions</h2>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            {% for pres in prescriptions %}
+            <div class="{% if pres.status == 'dispensed' %}border-success{% else %}border-warning{% endif %}" style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px; border-left-width: 3px; border-left-style: solid;">
+                <div style="display: flex; justify-content: space-between; font-weight: 700;">
+                    <span style="color: var(--accent);">{{ pres.medication_name }}</span>
+                    <span class="badge {% if pres.status == 'dispensed' %}badge-success{% else %}badge-warning{% endif %}">{{ pres.status }}</span>
+                </div>
+                <div style="font-size: 0.9rem; margin-top: 0.25rem;">
+                    Dosage: {{ pres.dosage }} | Freq: {{ pres.frequency }} ({{ pres.duration_days }} days)
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                    <span>Pat #{{ pres.patient_id }} | Doc #{{ pres.doctor_id }}</span>
+                    {% if pres.status == 'active' %}
+                    <form action="/prescriptions/{{ pres.id }}/dispense" method="post" style="display: inline;">
+                        <button type="submit" class="btn btn-primary" style="padding: 0.2rem 0.6rem; font-size: 0.8rem;">Dispense</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <p style="color: var(--text-secondary); text-align: center; padding: 2rem 0;">No active prescriptions.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

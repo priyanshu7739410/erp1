@@ -1,22 +1,67 @@
-# Python
+# Python / Bytecode
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 
-# Virtual Environment
+# Virtual Environments
 venv/
-.env/
+env/
+.env_venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
 
-# Database
-*.db
-
-# VS Code
-.vscode/
-
-# Environment Variables
+# Environment Variables & Secrets
 .env
+.env.local
+.env.*.local
+*.secret
 
-# Alembic cache
-alembic/__pycache__/
+# Database & SQLite Storage
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+erp.db
 
-# OS files
+# Docker & Container Overrides
+docker-compose.override.yml
+.docker/
+wheels/
+*.whl
+
+# Testing & Code Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.log
+logs/
+scratch/
+
+# Type Checking & Linting Caches
+.mypy_cache/
+.ruff_cache/
+.pyre/
+
+# Packaging & Distribution
+build/
+dist/
+*.egg-info/
+*.egg
+sdist/
+
+# IDEs & Editor Configuration
+.vscode/
+.idea/
+*.suo
+*.sln
+*.swp
+*.swo
+*~
+
+# OS Generated Files
 .DS_Store
+Thumbs.db

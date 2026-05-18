@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Add Inventory Item{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 650px; margin: 0 auto;">
+    <h1 style="margin-bottom: 0.5rem; color: var(--accent);">Add Pharmacy/Inventory Item</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Register a new medication, surgical tool, or hospital consumable</p>
+
+    <form action="/inventory/new" method="post">
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+            <div class="form-group">
+                <label for="name" class="form-label">Item Name (Medication/Supply) *</label>
+                <input type="text" id="name" name="name" class="form-control" required placeholder="Amoxicillin 500mg / N95 Mask">
+            </div>
+            <div class="form-group">
+                <label for="sku" class="form-label">SKU / Item Code *</label>
+                <input type="text" id="sku" name="sku" class="form-control" required placeholder="MED-AMOX-500">
+            </div>
+            <div class="form-group">
+                <label for="category" class="form-label">Category *</label>
+                <select id="category" name="category" class="form-control" required>
+                    <option value="medication">Medication</option>
+                    <option value="surgical">Surgical Supply</option>
+                    <option value="consumable">Hospital Consumable</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="unit" class="form-label">Unit of Measurement *</label>
+                <input type="text" id="unit" name="unit" class="form-control" required placeholder="box, vial, tablet, piece">
+            </div>
+            <div class="form-group">
+                <label for="quantity" class="form-label">Initial Stock Quantity *</label>
+                <input type="number" id="quantity" name="quantity" class="form-control" required min="0" value="50">
+            </div>
+            <div class="form-group">
+                <label for="reorder_level" class="form-label">Reorder Alert Threshold *</label>
+                <input type="number" id="reorder_level" name="reorder_level" class="form-control" required min="1" value="10">
+            </div>
+            <div class="form-group">
+                <label for="price" class="form-label">Unit Price ($)</label>
+                <input type="number" step="0.01" id="price" name="price" class="form-control" min="0" value="15.00">
+            </div>
+            <div class="form-group">
+                <label for="supplier" class="form-label">Supplier Name</label>
+                <input type="text" id="supplier" name="supplier" class="form-control" placeholder="Global Pharma / MedSupply Inc">
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+            <a href="/inventory" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary" style="padding: 0.8rem 2rem;">Save Item</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Appointment Schedule{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <h1 style="font-size: 2.2rem; font-weight: 700;">Appointment Scheduling</h1>
+        <p style="color: var(--text-secondary);">Manage patient visits, check-ins, and clinical scheduling</p>
+    </div>
+    <a href="/appointments/new" class="btn btn-primary">+ Schedule Appointment</a>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <form action="/appointments" method="get" style="display: flex; gap: 1rem; align-items: center;">
+        <div style="flex: 1;">
+            <label class="form-label" style="font-size: 0.85rem;">Filter Date (YYYY-MM-DD)</label>
+            <input type="date" name="date" value="{{ date_filter or '' }}" class="form-control">
+        </div>
+        <div style="align-self: flex-end; display: flex; gap: 0.5rem;">
+            <button type="submit" class="btn btn-primary" style="padding: 0.8rem 1.5rem;">Filter Schedule</button>
+            {% if date_filter %}
+            <a href="/appointments" class="btn btn-secondary" style="padding: 0.8rem 1.5rem;">Clear</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Appt ID</th>
+                    <th>Patient ID</th>
+                    <th>Doctor ID</th>
+                    <th>Start Time</th>
+                    <th>Status</th>
+                    <th>Reason</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appt in appointments %}
+                <tr>
+                    <td><strong>#{{ appt.id }}</strong></td>
+                    <td style="font-weight: 600;">Patient #{{ appt.patient_id }}</td>
+                    <td>Doc #{{ appt.doctor_id }}</td>
+                    <td>{{ appt.scheduled_start.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <span class="badge {% if appt.status == 'completed' %}badge-success{% elif appt.status == 'checked_in' %}badge-primary{% elif appt.status == 'cancelled' %}badge-danger{% else %}badge-warning{% endif %}">
+                            {{ appt.status }}
+                        </span>
+                    </td>
+                    <td>{{ appt.reason or 'Routine Checkup' }}</td>
+                    <td style="display: flex; gap: 0.5rem;">
+                        {% if appt.status == 'scheduled' %}
+                        <form action="/appointments/{{ appt.id }}/checkin" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-primary" style="padding: 0.2rem 0.6rem; font-size: 0.8rem;">Check-in</button>
+                        </form>
+                        <form action="/appointments/{{ appt.id }}/cancel" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-danger" style="padding: 0.2rem 0.6rem; font-size: 0.8rem;" onclick="return confirm('Are you sure you want to cancel this appointment?')">Cancel</button>
+                        </form>
+                        {% elif appt.status == 'checked_in' %}
+                        <a href="/medical-records/new?appointment_id={{ appt.id }}&patient_id={{ appt.patient_id }}&doctor_id={{ appt.doctor_id }}" class="btn btn-success" style="padding: 0.2rem 0.6rem; font-size: 0.8rem;">Complete Encounter</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-secondary);">No appointments scheduled for this view.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
