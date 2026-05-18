@@ -1,12 +1,12 @@
 services:
   db:
     image: postgres:15-alpine
-    container_name: erp_postgres
+    container_name: erp_postgres_prod
     restart: always
     env_file:
       - .env
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata_prod:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U erp_user -d hospital_erp"]
       interval: 5s
@@ -16,8 +16,8 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: erp_api
+      dockerfile: Dockerfile.prod
+    container_name: erp_api_prod
     restart: always
     env_file:
       - .env
@@ -34,7 +34,7 @@ services:
     command: >
       sh -c "alembic upgrade head &&
              python seed_sample_data.py &&
-             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4"
 
 volumes:
-  pgdata:
+  pgdata_prod:

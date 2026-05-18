@@ -28,6 +28,7 @@ from app.services.medical_record_service import create_medical_record
 from app.services.billing_service import record_payment, auto_generate_invoice_for_appointment
 from app.services.insurance_service import extract_policy_from_text, validate_appointment_coverage
 from app.services.inventory_service import create_item, create_prescription, dispense_prescription
+from app.utils.limiter import limiter
 
 router = APIRouter(tags=["Web UI"])
 templates = Jinja2Templates(directory="app/templates")
@@ -49,6 +50,7 @@ def login_page(request: Request, error: Optional[str] = None):
     return templates.TemplateResponse(request, "login.html", {"error": error})
 
 @router.post("/login")
+@limiter.limit("5/minute")
 def login_post(request: Request, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user or not verify_password(password, user.hashed_password):
@@ -64,6 +66,7 @@ def register_page(request: Request):
     return templates.TemplateResponse(request, "register.html", {})
 
 @router.post("/register")
+@limiter.limit("5/minute")
 def register_post(
     request: Request,
     username: str = Form(...),

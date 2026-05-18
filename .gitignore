@@ -16,6 +16,7 @@ pip-delete-this-directory.txt
 .env.local
 .env.*.local
 *.secret
+test_credentials.md
 
 # Database & SQLite Storage
 *.db

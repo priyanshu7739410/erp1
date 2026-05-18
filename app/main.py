@@ -20,12 +20,20 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         # In a production setting, log process_time and request details
         return response
 
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from app.utils.limiter import limiter
+
 app = FastAPI(
     title="MediCloud Hospital ERP",
     description="Full-scale production Enterprise Resource Planning system for healthcare facilities.",
     version="1.0.0"
 )
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(LoggingMiddleware)
 
 # Mount static files

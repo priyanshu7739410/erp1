@@ -16,6 +16,11 @@ def seed_database():
     print("Connecting to database for seeding...")
     db = SessionLocal()
     try:
+        # Check idempotency
+        if db.query(User).filter(User.username == "admin").first():
+            print("Database already seeded. Skipping re-seed to preserve existing state.")
+            return
+
         # Seed Departments
         dept_names = ["Cardiology", "Pediatrics", "General Medicine", "Emergency & ICU"]
         depts = {}
