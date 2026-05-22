@@ -27,7 +27,13 @@
             <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">Email: {{ doc.email }}</p>
         </div>
         <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+            {% if user and user.role == 'receptionist' %}
+            <div style="padding: 0.6rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); border-radius: 8px; text-align: center; color: var(--success); font-weight: 600; font-size: 0.9rem;">
+                Available Today (09:00 AM - 05:00 PM)
+            </div>
+            {% else %}
             <a href="/appointments/new?doctor_id={{ doc.id }}" class="btn btn-primary" style="width: 100%; text-align: center;">Book Consultation</a>
+            {% endif %}
         </div>
     </div>
     {% else %}

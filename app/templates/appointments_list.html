@@ -32,8 +32,8 @@
             <thead>
                 <tr>
                     <th>Appt ID</th>
-                    <th>Patient ID</th>
-                    <th>Doctor ID</th>
+                    <th>Patient</th>
+                    <th>Doctor</th>
                     <th>Start Time</th>
                     <th>Status</th>
                     <th>Reason</th>
@@ -44,8 +44,8 @@
                 {% for appt in appointments %}
                 <tr>
                     <td><strong>#{{ appt.id }}</strong></td>
-                    <td style="font-weight: 600;">Patient #{{ appt.patient_id }}</td>
-                    <td>Doc #{{ appt.doctor_id }}</td>
+                    <td style="font-weight: 600;">{{ appt.patient.name }} (#{{ appt.patient_id }})</td>
+                    <td>Dr. {{ appt.doctor.first_name }} {{ appt.doctor.last_name }} (#{{ appt.doctor_id }})</td>
                     <td>{{ appt.scheduled_start.strftime('%Y-%m-%d %H:%M') }}</td>
                     <td>
                         <span class="badge {% if appt.status == 'completed' %}badge-success{% elif appt.status == 'checked_in' %}badge-primary{% elif appt.status == 'cancelled' %}badge-danger{% else %}badge-warning{% endif %}">

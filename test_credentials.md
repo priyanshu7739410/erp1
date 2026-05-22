@@ -44,7 +44,7 @@ Use these pre-seeded accounts to explore the custom role-based dashboards, navig
 
 | Role | Staff Member | Department | Username | Password | Email |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Receptionist** | Claire Redfield | Front Desk / Admission | `receptionist1` | `staff123` | `claire.frontdesk@hospital.erp` |
+| **Receptionist** | Claire Redfield | Front Desk / Admission | `claire` | `staff123` | `claire.frontdesk@hospital.erp` |
 | **Nurse** | Joy Miller | Emergency & ICU | `nurse1` | `staff123` | `joy.nurse@hospital.erp` |
 | **Pharmacist** | David Wong | Pharmacy & Inventory | `pharmacist1` | `staff123` | `david.wong@hospital.erp` |
 | **Billing Officer** | Rachel Green | Finance & Accounting | `billing_officer1` | `staff123` | `rachel.finance@hospital.erp` |

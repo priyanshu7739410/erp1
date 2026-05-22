@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Appointment #{{ appt.id }}{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <a href="javascript:history.back()" style="color: var(--accent); text-decoration: none; font-weight: 600;">← Back</a>
+        <h1 style="font-size: 2.2rem; font-weight: 700; margin-top: 0.5rem;">Appointment #{{ appt.id }}</h1>
+        <p style="color: var(--text-secondary);">Scheduled for: {{ appt.scheduled_start.strftime('%B %d, %Y at %I:%M %p') }}</p>
+    </div>
+    <div>
+        <span class="badge {% if appt.status == 'completed' %}badge-success{% elif appt.status == 'checked_in' %}badge-primary{% elif appt.status == 'cancelled' %}badge-danger{% else %}badge-warning{% endif %}" style="font-size: 1rem; padding: 0.5rem 1rem;">
+            {{ appt.status|upper }}
+        </span>
+    </div>
+</div>
+
+<div class="grid" style="grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+    <div class="card">
+        <h2 style="margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Clinical Details</h2>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+            <div>
+                <h3 style="color: var(--accent); font-size: 1.1rem; margin-bottom: 0.5rem;">Patient Information</h3>
+                <p style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem;">
+                    {{ appt.patient.name }} <span style="color: var(--text-secondary); font-size: 0.9rem; font-weight: normal;">(#{{ appt.patient_id }})</span>
+                </p>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Age: {{ appt.patient.age }} | Gender: {{ appt.patient.gender }}</p>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Phone: {{ appt.patient.phone }}</p>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Insurance: {{ appt.patient.insurance_provider or 'None' }}</p>
+                <a href="/patients/{{ appt.patient_id }}" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem; display: inline-block;">View Clinical Chart</a>
+            </div>
+            
+            <div>
+                <h3 style="color: var(--accent); font-size: 1.1rem; margin-bottom: 0.5rem;">Attending Physician</h3>
+                <p style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem;">
+                    Dr. {{ appt.doctor.first_name }} {{ appt.doctor.last_name }} <span style="color: var(--text-secondary); font-size: 0.9rem; font-weight: normal;">(#{{ appt.doctor_id }})</span>
+                </p>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Specialty: {{ appt.doctor.specialty }}</p>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.25rem;">License: {{ appt.doctor.license_number }}</p>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Email: {{ appt.doctor.email }}</p>
+            </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+            <h3 style="font-size: 1rem; color: #fff; margin-bottom: 0.5rem;">Reason for Appointment</h3>
+            <p style="font-size: 0.95rem; color: var(--text-primary); line-height: 1.5;">{{ appt.reason or 'Routine physical examination and general follow-up consultation.' }}</p>
+        </div>
+
+        {% if appt.notes %}
+        <div style="margin-top: 1rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+            <h3 style="font-size: 1rem; color: #fff; margin-bottom: 0.5rem;">Pre-Admission Notes</h3>
+            <p style="font-size: 0.95rem; color: var(--text-primary); line-height: 1.5;">{{ appt.notes }}</p>
+        </div>
+        {% endif %}
+
+        <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem; display: flex; gap: 1rem;">
+            {% if appt.status == 'scheduled' %}
+            <form action="/appointments/{{ appt.id }}/checkin" method="post" style="display: inline;">
+                <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.2rem;">Check-in Patient</button>
+            </form>
+            <form action="/appointments/{{ appt.id }}/cancel" method="post" style="display: inline;">
+                <button type="submit" class="btn btn-danger" style="padding: 0.6rem 1.2rem;" onclick="return confirm('Are you sure you want to cancel this appointment?')">Cancel Appointment</button>
+            </form>
+            {% elif appt.status == 'checked_in' and user.role in ['doctor', 'nurse', 'admin'] %}
+            <a href="/medical-records/new?appointment_id={{ appt.id }}&patient_id={{ appt.patient_id }}&doctor_id={{ appt.doctor_id }}" class="btn btn-success" style="padding: 0.6rem 1.2rem;">Complete Encounter & Log Record</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+            <h2 style="margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Insurance Verification</h2>
+            
+            {% if coverage_review %}
+            <div style="padding: 1.25rem; border-radius: 12px; background: {% if coverage_review.status == 'approved' %}rgba(16, 185, 129, 0.1){% else %}rgba(245, 158, 11, 0.1){% endif %}; border: 1px solid {% if coverage_review.status == 'approved' %}var(--success){% else %}var(--warning){% endif %}; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <span style="font-weight: 700; color: {% if coverage_review.status == 'approved' %}var(--success){% else %}var(--warning){% endif %}; font-size: 1rem;">
+                        {{ coverage_review.status|upper }}
+                    </span>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Reviewed Today</span>
+                </div>
+                
+                <h4 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.25rem;">Coverage Check Result:</h4>
+                <p style="font-size: 0.9rem; color: var(--text-primary); margin-bottom: 1rem; line-height: 1.4;">{{ coverage_review.coverage_issue }}</p>
+                
+                <h4 style="font-size: 0.95rem; color: #fff; margin-bottom: 0.25rem;">Recommended Staff Action:</h4>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.4;">{{ coverage_review.recommended_actions or 'No action needed.' }}</p>
+
+                <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem; display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 600;">
+                    <span style="color: var(--text-secondary);">Estimated Patient Co-Pay:</span>
+                    <span style="color: var(--accent); font-size: 1.05rem;">${{ "%.2f"|format(coverage_review.estimated_patient_cost) }}</span>
+                </div>
+            </div>
+            {% else %}
+            <div style="padding: 1.5rem; text-align: center; color: var(--text-secondary); background: rgba(255,255,255,0.02); border: 1px dashed var(--border); border-radius: 8px;">
+                <p style="margin-bottom: 1rem;">No active coverage verification check has been conducted for this appointment.</p>
+                <a href="/insurance/upload?patient_id={{ appt.patient_id }}" class="btn btn-secondary" style="font-size: 0.85rem;">Upload Policy Document</a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div style="font-size: 0.8rem; color: var(--text-secondary); border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1rem;">
+            * Insurance pre-authorizations are automatically verified using hospital contract mapping.
+        </div>
+    </div>
+</div>
+{% endblock %}

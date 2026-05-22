@@ -34,7 +34,7 @@
                 <tr>
                     <th>Review ID</th>
                     <th>Appt ID</th>
-                    <th>Patient ID</th>
+                    <th>Patient</th>
                     <th>Status</th>
                     <th>Coverage Issue Detected</th>
                     <th>Recommended Actions</th>
@@ -46,7 +46,7 @@
                 <tr>
                     <td><strong>#{{ rev.id }}</strong></td>
                     <td style="font-weight: 600;">Appt #{{ rev.appointment_id }}</td>
-                    <td>Patient #{{ rev.patient_id }}</td>
+                    <td style="font-weight: 600;">{{ rev.patient.name }} (#{{ rev.patient_id }})</td>
                     <td>
                         <span class="badge {% if rev.status == 'approved' %}badge-success{% elif rev.status == 'flagged' %}badge-warning{% else %}badge-danger{% endif %}">
                             {{ rev.status }}

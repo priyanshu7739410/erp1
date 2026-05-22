@@ -41,7 +41,7 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Doctor ID</th>
+                        <th>Doctor</th>
                         <th>Scheduled Time</th>
                         <th>Status</th>
                         <th>Action</th>
@@ -50,7 +50,7 @@
                 <tbody>
                     {% for appt in appointments %}
                     <tr>
-                        <td style="font-weight: 600;">Doctor #{{ appt.doctor_id }}</td>
+                        <td style="font-weight: 600;">Dr. {{ appt.doctor.first_name }} {{ appt.doctor.last_name }} (#{{ appt.doctor_id }})</td>
                         <td>{{ appt.scheduled_start.strftime('%B %d, %Y - %H:%M') }}</td>
                         <td>
                             <span class="badge {% if appt.status == 'completed' %}badge-success{% elif appt.status == 'scheduled' %}badge-primary{% else %}badge-warning{% endif %}">

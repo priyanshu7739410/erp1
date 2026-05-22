@@ -30,3 +30,7 @@ class CoverageReview(Base):
     coverage_issue = Column(String, nullable=True) # reason if flagged/denied
     recommended_actions = Column(String, nullable=True)
     estimated_patient_cost = Column(Float, default=0.0)
+
+    patient = relationship("Patient")
+    appointment = relationship("Appointment")
+    insurance_policy = relationship("InsurancePolicy")

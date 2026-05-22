@@ -16,6 +16,7 @@ class Invoice(Base):
 
     line_items = relationship("BillingLineItem", back_populates="invoice", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="invoice", cascade="all, delete-orphan")
+    patient = relationship("Patient")
 
 class BillingLineItem(Base):
     __tablename__ = "billing_line_items"

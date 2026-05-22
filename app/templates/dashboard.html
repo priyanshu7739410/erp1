@@ -30,11 +30,13 @@
         <p style="font-size: 2.5rem; font-weight: 700; margin-top: 0.5rem; color: #fff;">{{ stats.appointments_count }}</p>
         <p style="font-size: 0.85rem; color: var(--warning); margin-top: 0.5rem;">● Scheduled & checked in</p>
     </div>
+    {% if user.role != 'receptionist' %}
     <div class="card" style="border-left: 4px solid var(--danger);">
         <h3 style="color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Pending Invoices</h3>
         <p style="font-size: 2.5rem; font-weight: 700; margin-top: 0.5rem; color: #fff;">${{ stats.pending_revenue }}</p>
         <p style="font-size: 0.85rem; color: var(--danger); margin-top: 0.5rem;">● Awaiting payment capture</p>
     </div>
+    {% endif %}
 </div>
 
 <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
@@ -57,8 +59,8 @@
                 <tbody>
                     {% for appt in recent_appointments %}
                     <tr>
-                        <td style="font-weight: 600;">Patient #{{ appt.patient_id }}</td>
-                        <td>Doc #{{ appt.doctor_id }}</td>
+                        <td style="font-weight: 600;">{{ appt.patient.name }} (#{{ appt.patient_id }})</td>
+                        <td>Dr. {{ appt.doctor.first_name }} {{ appt.doctor.last_name }} (#{{ appt.doctor_id }})</td>
                         <td>{{ appt.scheduled_start.strftime('%Y-%m-%d %H:%M') }}</td>
                         <td><span class="badge badge-primary">{{ appt.status }}</span></td>
                         <td><a href="/appointments/{{ appt.id }}" class="btn btn-secondary" style="padding: 0.2rem 0.6rem; font-size: 0.8rem;">Details</a></td>
@@ -80,8 +82,9 @@
                     <span style="font-weight: 700; color: var(--warning);">Appt #{{ review.appointment_id }}</span>
                     <span class="badge badge-warning">{{ review.status }}</span>
                 </div>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Patient: <strong style="color: #fff;">{{ review.patient.name }} (#{{ review.patient_id }})</strong></p>
                 <p style="font-size: 0.9rem; color: var(--text-primary); margin-bottom: 0.5rem;">{{ review.coverage_issue }}</p>
-                <a href="/insurance/warnings" style="font-size: 0.85rem; color: var(--accent); text-decoration: none; font-weight: 600;">Review Actions →</a>
+                <a href="/appointments/{{ review.appointment_id }}" style="font-size: 0.85rem; color: var(--accent); text-decoration: none; font-weight: 600;">Review Actions →</a>
             </div>
             {% else %}
             <p style="color: var(--success); font-weight: 600; text-align: center; padding: 2rem 0;">✓ All upcoming appointments have verified insurance coverage.</p>

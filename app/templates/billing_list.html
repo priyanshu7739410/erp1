@@ -18,7 +18,7 @@
                 <thead>
                     <tr>
                         <th>Inv #</th>
-                        <th>Patient ID</th>
+                        <th>Patient</th>
                         <th>Inv Date</th>
                         <th>Amount</th>
                         <th>Status</th>
@@ -29,7 +29,7 @@
                     {% for inv in invoices %}
                     <tr>
                         <td><strong>#{{ inv.id }}</strong></td>
-                        <td style="font-weight: 600;">Patient #{{ inv.patient_id }}</td>
+                        <td style="font-weight: 600;">{{ inv.patient.name }} (#{{ inv.patient_id }})</td>
                         <td>{{ inv.invoice_date.strftime('%Y-%m-%d') }}</td>
                         <td style="font-weight: 700;">${{ "%.2f"|format(inv.total_amount) }}</td>
                         <td>

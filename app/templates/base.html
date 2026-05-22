@@ -25,6 +25,10 @@
             <li><a href="/patients" class="nav-link">Patients</a></li>
             <li><a href="/appointments" class="nav-link">Schedule</a></li>
             <li><a href="/inventory" class="nav-link">Pharmacy</a></li>
+            {% elif user.role == 'receptionist' %}
+            <li><a href="/patients" class="nav-link">Patients</a></li>
+            <li><a href="/doctors" class="nav-link">Doctors</a></li>
+            <li><a href="/appointments" class="nav-link">Appointments</a></li>
             {% else %}
             <li><a href="/patients" class="nav-link">Patients</a></li>
             <li><a href="/doctors" class="nav-link">Doctors</a></li>
@@ -33,7 +37,7 @@
             <li><a href="/insurance" class="nav-link">Insurance</a></li>
             <li><a href="/inventory" class="nav-link">Pharmacy</a></li>
             {% endif %}
-            <li><span class="nav-link" style="color: var(--accent); font-weight: 700;">{{ user.username }} ({{ user.role }})</span></li>
+            <li><span class="nav-link" style="color: var(--accent); font-weight: 700;">{{ user.display_name or user.username }} ({{ user.role }})</span></li>
             <li><a href="/logout" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">Logout</a></li>
             {% else %}
             <li><a href="/login" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">Login</a></li>

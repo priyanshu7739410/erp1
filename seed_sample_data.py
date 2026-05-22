@@ -16,10 +16,8 @@ def seed_database():
     print("Connecting to database for seeding...")
     db = SessionLocal()
     try:
-        # Check idempotency
-        if db.query(User).filter(User.username == "admin").first():
-            print("Database already seeded. Skipping re-seed to preserve existing state.")
-            return
+        # Check idempotency or run updates
+        print("Running database seeding check and updates...")
 
         # Seed Departments
         dept_names = ["Cardiology", "Pediatrics", "General Medicine", "Emergency & ICU"]
@@ -49,14 +47,21 @@ def seed_database():
         for u in sample_users:
             user = db.query(User).filter(User.username == u["username"]).first()
             if not user:
-                user = User(
-                    username=u["username"],
-                    email=u["email"],
-                    hashed_password=get_password_hash(u["pass"]),
-                    role=u["role"],
-                    is_active=True
-                )
-                db.add(user)
+                # If username not found, check if a user with this email already exists to update them
+                user_by_email = db.query(User).filter(User.email == u["email"]).first()
+                if user_by_email:
+                    user_by_email.username = u["username"]
+                    user_by_email.hashed_password = get_password_hash(u["pass"])
+                    user_by_email.role = u["role"]
+                else:
+                    user = User(
+                        username=u["username"],
+                        email=u["email"],
+                        hashed_password=get_password_hash(u["pass"]),
+                        role=u["role"],
+                        is_active=True
+                    )
+                    db.add(user)
         db.commit()
 
         # Seed Doctors
@@ -230,6 +235,82 @@ def seed_database():
                 )
                 db.add(pres)
                 db.commit()
+
+        # Seed Insurance Policies & Coverage Reviews
+        from app.models.insurance import InsurancePolicy, CoverageReview
+        
+        # 1. Emily Clark Insurance
+        pol_emily = db.query(InsurancePolicy).filter(InsurancePolicy.patient_id == pat_emily.id).first()
+        if not pol_emily:
+            pol_emily = InsurancePolicy(
+                patient_id=pat_emily.id,
+                provider_name="Blue Shield Health",
+                policy_number="POL-EMILY-123",
+                group_number="GRP-9912",
+                deductible=250.0,
+                co_pay=20.0,
+                coverage_summary="Premium comprehensive cardiac and general medical coverage.",
+                network_status="in-network",
+                exclusions="Cosmetic surgery, Experimental acupuncture",
+                is_active=True
+            )
+            db.add(pol_emily)
+            db.commit()
+            db.refresh(pol_emily)
+
+        # 2. Robert Taylor Insurance (Out of Network / Flagged)
+        pol_robert = db.query(InsurancePolicy).filter(InsurancePolicy.patient_id == pat_robert.id).first()
+        if not pol_robert:
+            pol_robert = InsurancePolicy(
+                patient_id=pat_robert.id,
+                provider_name="Aetna Care Plus",
+                policy_number="POL-ROBERT-456",
+                group_number="GRP-8831",
+                deductible=1000.0,
+                co_pay=30.0,
+                coverage_summary="Standard clinical care, out-of-network exclusions apply.",
+                network_status="out-of-network",
+                exclusions="Pediatrics, Child developmental therapy",
+                is_active=True
+            )
+            db.add(pol_robert)
+            db.commit()
+            db.refresh(pol_robert)
+
+        # Get appointments to link
+        appt1 = db.query(Appointment).filter(Appointment.patient_id == pat_emily.id).first()
+        appt2 = db.query(Appointment).filter(Appointment.patient_id == pat_robert.id).first()
+
+        if appt1 and pol_emily:
+            rev1 = db.query(CoverageReview).filter(CoverageReview.appointment_id == appt1.id).first()
+            if not rev1:
+                rev1 = CoverageReview(
+                    patient_id=pat_emily.id,
+                    appointment_id=appt1.id,
+                    insurance_policy_id=pol_emily.id,
+                    review_date=datetime.utcnow(),
+                    status="approved",
+                    coverage_issue="Coverage verified successfully",
+                    recommended_actions="Proceed with appointment check-in",
+                    estimated_patient_cost=20.0
+                )
+                db.add(rev1)
+
+        if appt2 and pol_robert:
+            rev2 = db.query(CoverageReview).filter(CoverageReview.appointment_id == appt2.id).first()
+            if not rev2:
+                rev2 = CoverageReview(
+                    patient_id=pat_robert.id,
+                    appointment_id=appt2.id,
+                    insurance_policy_id=pol_robert.id,
+                    review_date=datetime.utcnow(),
+                    status="flagged",
+                    coverage_issue="Insurance provider Aetna Care Plus is out-of-network for this hospital facility",
+                    recommended_actions="Notify patient of out-of-network deductible requirements ($1000.00) before consultation",
+                    estimated_patient_cost=150.0
+                )
+                db.add(rev2)
+        db.commit()
 
         print("Database successfully seeded with robust role-based test data!")
     except Exception as e:

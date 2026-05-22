@@ -43,7 +43,27 @@ def get_web_user(request: Request, db: Session = Depends(get_db)) -> Optional[Us
     if not payload or "sub" not in payload:
         return None
     username = payload.get("sub")
-    return db.query(User).filter(User.username == username, User.is_active == True).first()
+    user = db.query(User).filter(User.username == username, User.is_active == True).first()
+    if user:
+        display_name = None
+        if user.role in ["receptionist", "nurse", "pharmacist", "billing_officer"]:
+            from app.models.staff import Staff
+            staff = db.query(Staff).filter(Staff.email.ilike(user.email.strip())).first()
+            if staff:
+                display_name = f"{staff.first_name} {staff.last_name}"
+        elif user.role == "doctor":
+            from app.models.doctor import Doctor
+            doctor = db.query(Doctor).filter(Doctor.email.ilike(user.email.strip())).first()
+            if doctor:
+                display_name = f"Dr. {doctor.first_name} {doctor.last_name}"
+        elif user.role == "patient":
+            from app.models.patient import Patient
+            patient = db.query(Patient).filter(Patient.email.ilike(user.email.strip())).first()
+            if patient:
+                display_name = patient.name
+        
+        user.display_name = display_name or user.username
+    return user
 
 @router.get("/login", response_class=HTMLResponse)
 def login_page(request: Request, error: Optional[str] = None):
@@ -87,6 +107,44 @@ def register_post(
                 phone="Pending Registration"
             )
             create_patient(db, patient_data)
+        elif role in ["receptionist", "nurse", "pharmacist", "billing_officer"]:
+            from app.models.staff import Staff
+            existing_staff = db.query(Staff).filter(Staff.email.ilike(email.strip())).first()
+            if not existing_staff:
+                name_parts = username.split()
+                first_name = name_parts[0].capitalize()
+                last_name = name_parts[1].capitalize() if len(name_parts) > 1 else "Staff"
+                import random
+                emp_id = f"EMP-{role[:3].upper()}-{random.randint(100, 999)}"
+                new_staff = Staff(
+                    first_name=first_name,
+                    last_name=last_name,
+                    role=role,
+                    employee_id=emp_id,
+                    phone="Pending",
+                    email=email,
+                    is_active=True
+                )
+                db.add(new_staff)
+                db.commit()
+        elif role == "doctor":
+            from app.models.doctor import Doctor
+            existing_doctor = db.query(Doctor).filter(Doctor.email.ilike(email.strip())).first()
+            if not existing_doctor:
+                name_parts = username.split()
+                first_name = name_parts[0].capitalize()
+                last_name = name_parts[1].capitalize() if len(name_parts) > 1 else "Doctor"
+                new_doctor = Doctor(
+                    first_name=first_name,
+                    last_name=last_name,
+                    specialty="General Medicine",
+                    license_number="Pending",
+                    phone="Pending",
+                    email=email,
+                    is_active=True
+                )
+                db.add(new_doctor)
+                db.commit()
         return RedirectResponse(url="/login?message=Registration successful. Please log in.", status_code=status.HTTP_302_FOUND)
     except Exception as e:
         return templates.TemplateResponse(request, "register.html", {"error": str(e)})
@@ -138,7 +196,7 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: Optional[Us
     pending_revenue = sum(inv.total_amount for inv in pending_invoices)
     
     recent_appointments = db.query(Appointment).order_by(Appointment.scheduled_start).limit(5).all()
-    recent_warnings = db.query(CoverageReview).order_by(CoverageReview.review_date.desc()).limit(5).all()
+    recent_warnings = db.query(CoverageReview).filter(CoverageReview.status != "approved").order_by(CoverageReview.review_date.desc()).limit(5).all()
 
     stats = {
         "patients_count": patients_count,
@@ -265,6 +323,23 @@ def new_appointment_post(
         return templates.TemplateResponse(request, "appointment_form.html", {
             "patients": patients, "doctors": doctors, "error": str(e)
         })
+
+@router.get("/appointments/{appt_id:int}", response_class=HTMLResponse)
+def appointment_detail_page(request: Request, appt_id: int, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
+    if not user:
+        return RedirectResponse(url="/login")
+    appt = db.query(Appointment).filter(Appointment.id == appt_id).first()
+    if not appt:
+        return RedirectResponse(url="/appointments?error=Appointment+not+found")
+    
+    # Get associated insurance coverage review
+    coverage_review = db.query(CoverageReview).filter(CoverageReview.appointment_id == appt_id).first()
+    
+    return templates.TemplateResponse(request, "appointment_detail.html", {
+        "user": user, 
+        "appt": appt,
+        "coverage_review": coverage_review
+    })
 
 @router.post("/appointments/{appt_id}/checkin")
 def checkin_appointment(appt_id: int, db: Session = Depends(get_db)):
