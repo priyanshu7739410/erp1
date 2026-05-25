@@ -21,3 +21,57 @@ def test_insurance_policy_creation_and_check(client: TestClient):
     assert policy["provider_name"] == "Aetna Health"
     assert policy["deductible"] == 250.0
     assert policy["co_pay"] == 25.0
+
+def test_patient_insurance_web_access(client: TestClient):
+    # Register patient user
+    reg_resp = client.post(
+        "/api/v1/auth/register",
+        json={
+            "username": "pat_charlie",
+            "email": "charlie@hospital.com",
+            "password": "patpassword123",
+            "role": "patient"
+        }
+    )
+    assert reg_resp.status_code == 200
+    
+    # Create patient record via API with same email so display name / ID matches
+    admin_headers = get_auth_headers(client)
+    client.post(
+        "/api/v1/patients/",
+        headers=admin_headers,
+        json={
+            "name": "Charlie", 
+            "email": "charlie@hospital.com",
+            "age": 25, 
+            "gender": "Male", 
+            "phone": "555333"
+        }
+    )
+    
+    # Log in as patient to get JWT token
+    login_resp = client.post(
+        "/api/v1/auth/token",
+        data={"username": "pat_charlie", "password": "patpassword123"}
+    )
+    assert login_resp.status_code == 200
+    token = login_resp.json()["access_token"]
+    
+    # Set cookie
+    client.cookies.set("access_token", f"Bearer {token}")
+    
+    # Request /insurance redirect
+    redir_resp = client.get("/insurance", follow_redirects=False)
+    assert redir_resp.status_code in [302, 307]
+    assert redir_resp.headers["location"] == "/insurance/warnings"
+    
+    # Request /insurance/warnings
+    warnings_resp = client.get("/insurance/warnings")
+    assert warnings_resp.status_code == 200
+    assert "My Insurance Benefits" in warnings_resp.text or "No Active Insurance Policy Registered" in warnings_resp.text
+    
+    # Request /insurance/upload
+    upload_resp = client.get("/insurance/upload")
+    assert upload_resp.status_code == 200
+    assert "Patient Name" in upload_resp.text
+

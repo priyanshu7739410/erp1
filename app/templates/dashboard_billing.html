@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Billing & Accounts Portal{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <h1 style="font-size: 2.2rem; font-weight: 700; color: #fff;">Financial Accounts Portal — Welcome, {{ user.display_name or user.username }}</h1>
+        <p style="color: var(--text-secondary); margin-top: 0.25rem;">Patient invoicing, payment captures, audits, and billing adjustments</p>
+    </div>
+    <div>
+        <a href="/billing" class="btn btn-primary">Full Invoices Ledger</a>
+    </div>
+</div>
+
+<div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2.5rem;">
+    <div class="card" style="border-left: 4px solid var(--accent);">
+        <h3 style="color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Active Patients</h3>
+        <p style="font-size: 2.2rem; font-weight: 700; margin-top: 0.5rem; color: #fff;">{{ stats.patients_count }}</p>
+        <p style="font-size: 0.85rem; color: var(--success); margin-top: 0.5rem;">● In patient directory</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--danger);">
+        <h3 style="color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Unpaid Invoices</h3>
+        <p style="font-size: 2.2rem; font-weight: 700; margin-top: 0.5rem; color: var(--danger);">{{ stats.unpaid_count }}</p>
+        <p style="font-size: 0.85rem; color: var(--danger); margin-top: 0.5rem;">● Outstanding captures</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--success);">
+        <h3 style="color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Total Collected</h3>
+        <p style="font-size: 2.2rem; font-weight: 700; margin-top: 0.5rem; color: var(--success);">${{ stats.total_collected }}</p>
+        <p style="font-size: 0.85rem; color: var(--success); margin-top: 0.5rem;">● Settled hospital payments</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--warning);">
+        <h3 style="color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase;">Awaiting Settlement</h3>
+        <p style="font-size: 2.2rem; font-weight: 700; margin-top: 0.5rem; color: var(--warning);">${{ stats.total_pending }}</p>
+        <p style="font-size: 0.85rem; color: var(--warning); margin-top: 0.5rem;">● Uncaptured total outstanding</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+    <!-- Unpaid Invoices Triage -->
+    <div class="card">
+        <h2 style="margin-bottom: 1rem;">Outstanding Accounts Queue</h2>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Invoice</th>
+                        <th>Patient</th>
+                        <th>Amount Due</th>
+                        <th>Due Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in unpaid_invoices %}
+                    <tr>
+                        <td style="font-weight: 600;">#{{ inv.id }}</td>
+                        <td>{{ inv.patient.name }} (#{{ inv.patient_id }})</td>
+                        <td style="color: var(--danger); font-weight: 700;">${{ "%.2f"|format(inv.total_amount) }}</td>
+                        <td>{{ inv.due_date.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <a href="/billing/invoices/{{ inv.id }}" class="btn btn-primary" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">Collect Payment</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 2rem;">✓ All patient accounts are currently fully settled.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recent Payments History -->
+    <div class="card">
+        <h2 style="margin-bottom: 1rem;">Recent Transactions Ledger</h2>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Transaction ID</th>
+                        <th>Invoice</th>
+                        <th>Amount Paid</th>
+                        <th>Method</th>
+                        <th>Settled Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pay in recent_payments %}
+                    <tr>
+                        <td style="font-weight: 600; color: var(--accent);">{{ pay.reference_number or 'TX-' ~ pay.id }}</td>
+                        <td>Invoice #{{ pay.invoice_id }}</td>
+                        <td style="color: var(--success); font-weight: 700;">${{ "%.2f"|format(pay.amount_paid) }}</td>
+                        <td><span class="badge badge-success">{{ pay.method }}</span></td>
+                        <td>{{ pay.paid_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 2rem;">No transaction receipts logged today.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

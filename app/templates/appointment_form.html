@@ -8,6 +8,13 @@
     <p style="color: var(--text-secondary); margin-bottom: 2rem;">Book a consultation with an attending physician</p>
 
     <form action="/appointments/new" method="post">
+        {% if user.role == 'patient' %}
+        <input type="hidden" name="patient_id" value="{{ selected_patient_id }}">
+        <div class="form-group">
+            <label class="form-label">Patient</label>
+            <input type="text" class="form-control" value="{% for p in patients %}{% if selected_patient_id == p.id %}{{ p.name }} (#{{ p.id }}){% endif %}{% endfor %}" readonly>
+        </div>
+        {% else %}
         <div class="form-group">
             <label for="patient_id" class="form-label">Select Patient *</label>
             <select id="patient_id" name="patient_id" class="form-control" required>
@@ -18,6 +25,7 @@
                 {% endfor %}
             </select>
         </div>
+        {% endif %}
 
         <div class="form-group">
             <label for="doctor_id" class="form-label">Select Attending Physician *</label>

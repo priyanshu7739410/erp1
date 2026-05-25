@@ -29,6 +29,55 @@
 <div class="card">
     <div class="table-responsive">
         <table class="table">
+            {% if user.role == 'patient' %}
+            <thead>
+                <tr>
+                    <th>Appt ID</th>
+                    <th>Attending Doctor</th>
+                    <th>Scheduled Time</th>
+                    <th>Status</th>
+                    <th>Queue / Waiting Number</th>
+                    <th>Reason</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appt in appointments %}
+                <tr>
+                    <td><strong>#{{ appt.id }}</strong></td>
+                    <td style="font-weight: 600;">Dr. {{ appt.doctor.first_name }} {{ appt.doctor.last_name }} (#{{ appt.doctor_id }})</td>
+                    <td>{{ appt.scheduled_start.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <span class="badge {% if appt.status == 'completed' %}badge-success{% elif appt.status == 'checked_in' %}badge-primary{% elif appt.status == 'cancelled' %}badge-danger{% else %}badge-warning{% endif %}">
+                            {{ appt.status }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if appt.status == 'checked_in' %}
+                        <span class="badge badge-warning" style="font-size: 0.85rem; font-weight: 700;">Position #{{ appt.waiting_number }}</span>
+                        {% elif appt.status == 'scheduled' %}
+                        <span style="color: var(--text-secondary); font-size: 0.9rem;">Awaiting Check-in</span>
+                        {% else %}
+                        <span style="color: var(--text-secondary); font-size: 0.9rem;">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ appt.reason or 'Routine Checkup' }}</td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            {% if appt.status == 'scheduled' %}
+                            <form action="/appointments/{{ appt.id }}/cancel" method="post" style="display: inline;">
+                                <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;" onclick="return confirm('Are you sure you want to cancel this appointment?')">Cancel Visit</button>
+                            </form>
+                            {% endif %}
+                            <a href="/appointments/{{ appt.id }}" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">View Visit</a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-secondary);">No appointments scheduled for this view.</td></tr>
+                {% endfor %}
+            </tbody>
+            {% else %}
             <thead>
                 <tr>
                     <th>Appt ID</th>
@@ -53,23 +102,29 @@
                         </span>
                     </td>
                     <td>{{ appt.reason or 'Routine Checkup' }}</td>
-                    <td style="display: flex; gap: 0.5rem;">
-                        {% if appt.status == 'scheduled' %}
-                        <form action="/appointments/{{ appt.id }}/checkin" method="post" style="display: inline;">
-                            <button type="submit" class="btn btn-primary" style="padding: 0.2rem 0.6rem; font-size: 0.8rem;">Check-in</button>
-                        </form>
-                        <form action="/appointments/{{ appt.id }}/cancel" method="post" style="display: inline;">
-                            <button type="submit" class="btn btn-danger" style="padding: 0.2rem 0.6rem; font-size: 0.8rem;" onclick="return confirm('Are you sure you want to cancel this appointment?')">Cancel</button>
-                        </form>
-                        {% elif appt.status == 'checked_in' %}
-                        <a href="/medical-records/new?appointment_id={{ appt.id }}&patient_id={{ appt.patient_id }}&doctor_id={{ appt.doctor_id }}" class="btn btn-success" style="padding: 0.2rem 0.6rem; font-size: 0.8rem;">Complete Encounter</a>
-                        {% endif %}
+                    <td>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            {% if appt.status == 'scheduled' %}
+                            <form action="/appointments/{{ appt.id }}/checkin" method="post" style="display: inline;">
+                                <button type="submit" class="btn btn-primary" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">Check-in</button>
+                            </form>
+                            {% if user.role in ['admin', 'receptionist'] %}
+                            <form action="/appointments/{{ appt.id }}/cancel" method="post" style="display: inline;">
+                                <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;" onclick="return confirm('Are you sure you want to cancel this appointment?')">Cancel</button>
+                            </form>
+                            {% endif %}
+                            {% elif appt.status == 'checked_in' and user.role in ['admin', 'doctor', 'nurse'] %}
+                            <a href="/medical-records/new?appointment_id={{ appt.id }}&patient_id={{ appt.patient_id }}&doctor_id={{ appt.doctor_id }}" class="btn btn-success" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">Complete Encounter</a>
+                            {% endif %}
+                            <a href="/appointments/{{ appt.id }}" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">Details</a>
+                        </div>
                     </td>
                 </tr>
                 {% else %}
                 <tr><td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-secondary);">No appointments scheduled for this view.</td></tr>
                 {% endfor %}
             </tbody>
+            {% endif %}
         </table>
     </div>
 </div>

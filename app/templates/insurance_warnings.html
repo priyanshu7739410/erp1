@@ -5,12 +5,136 @@
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
     <div>
-        <h1 style="font-size: 2.2rem; font-weight: 700;">Insurance Optimization & Policy Reviews</h1>
-        <p style="color: var(--text-secondary);">Pre-appointment claim validation, network checks, and coverage risk management</p>
+        <h1 style="font-size: 2.2rem; font-weight: 700;">{% if user.role == 'patient' %}My Insurance Benefits & Coverage{% else %}Insurance Optimization & Policy Reviews{% endif %}</h1>
+        <p style="color: var(--text-secondary);">{% if user.role == 'patient' %}View your active policy rules, coverage exclusions, and pre-consultation claim checkups{% else %}Pre-appointment claim validation, network checks, and coverage risk management{% endif %}</p>
     </div>
+    {% if not (user.role == 'patient' and policy) %}
     <a href="/insurance/upload" class="btn btn-primary">+ Upload Policy Document</a>
+    {% endif %}
 </div>
 
+{% if user.role == 'patient' %}
+    {% if policy %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Card 1: Benefits Card -->
+        <div class="card" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95)); border: 1px solid rgba(56, 189, 248, 0.35); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6); position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; min-height: 250px;">
+            <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%); pointer-events: none;"></div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; z-index: 1;">
+                <div>
+                    <span style="font-size: 0.8rem; color: var(--accent); text-transform: uppercase; font-weight: 700; letter-spacing: 0.1em;">Active Coverage</span>
+                    <h3 style="font-size: 1.8rem; font-weight: 700; margin-top: 0.2rem; color: #fff;">{{ policy.provider_name }}</h3>
+                </div>
+                <span class="badge {% if policy.network_status == 'in-network' %}badge-success{% else %}badge-warning{% endif %}" style="font-size: 0.9rem; padding: 0.4rem 1rem;">
+                    {{ policy.network_status|upper }}
+                </span>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-top: 1.5rem; margin-bottom: 1.5rem; z-index: 1;">
+                <div>
+                    <span style="display: block; font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Policy Number</span>
+                    <span style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary);">{{ policy.policy_number }}</span>
+                </div>
+                <div>
+                    <span style="display: block; font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Group Number</span>
+                    <span style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary);">{{ policy.group_number or 'N/A' }}</span>
+                </div>
+                <div>
+                    <span style="display: block; font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Deductible</span>
+                    <span style="font-size: 1.1rem; font-weight: 700; color: var(--accent);">${{ "%.2f"|format(policy.deductible) }}</span>
+                </div>
+                <div>
+                    <span style="display: block; font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Co-Pay Rate</span>
+                    <span style="font-size: 1.1rem; font-weight: 700; color: var(--success);">
+                        {% if policy.co_pay < 1.0 %}
+                            {{ (policy.co_pay * 100)|int }}%
+                        {% else %}
+                            {{ policy.co_pay|int }}%
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Exclusions & Summary -->
+        <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; min-height: 250px;">
+            <div>
+                <h4 style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Policy Inclusions & Notes</h4>
+                <p style="font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary); margin-bottom: 1.25rem;">
+                    {{ policy.coverage_summary or 'No coverage summary provided.' }}
+                </p>
+                
+                <h4 style="font-size: 1.1rem; font-weight: 600; color: var(--danger); margin-bottom: 0.5rem;">Exclusions</h4>
+                <p style="font-size: 0.85rem; line-height: 1.4; color: var(--text-secondary);">
+                    {{ policy.exclusions or 'No general exclusions specified.' }}
+                </p>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); border-top: 1px solid var(--border); padding-top: 0.75rem; margin-top: 1rem;">
+                Status: <span class="text-success" style="font-weight: 600;">ACTIVE</span>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Warning Banner when no policy is active -->
+    <div class="card" style="background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); border-radius: var(--radius); padding: 2rem; margin-bottom: 2rem; display: flex; gap: 1.5rem; align-items: center;">
+        <div style="background: rgba(239, 68, 68, 0.2); border-radius: 50%; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg>
+        </div>
+        <div style="flex: 1;">
+            <h3 style="color: var(--danger); font-weight: 700; font-size: 1.25rem; margin-bottom: 0.25rem;">No Active Insurance Policy Registered</h3>
+            <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1rem;">Please upload your policy document to enable automated pre-consultation claim verification and network checks.</p>
+            <a href="/insurance/upload" class="btn btn-danger" style="display: inline-block;">Upload Policy Document</a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Coverage Reviews table for Patient -->
+    <div class="card">
+        <h3 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--accent);">My Visit Coverage Verification Reviews</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">Reviews generated prior to your visits to calculate potential out-of-pocket costs and clear claim denials</p>
+        
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Review ID</th>
+                        <th>Visit ID (Appt)</th>
+                        <th>Verification Status</th>
+                        <th>Review Results & Guidance</th>
+                        <th>Recommended Actions</th>
+                        <th>Est. Out-of-Pocket Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rev in reviews %}
+                    <tr>
+                        <td><strong>#{{ rev.id }}</strong></td>
+                        <td style="font-weight: 600;">Appt #{{ rev.appointment_id }}</td>
+                        <td>
+                            <span class="badge {% if rev.status == 'approved' %}badge-success{% elif rev.status == 'flagged' %}badge-warning{% else %}badge-danger{% endif %}">
+                                {{ rev.status|upper }}
+                            </span>
+                        </td>
+                        <td class="{% if rev.status == 'approved' %}text-success{% elif rev.status == 'flagged' %}text-warning{% else %}text-danger{% endif %}" style="font-weight: 500; font-size: 0.9rem; max-width: 300px; white-space: normal; line-height: 1.4;">
+                            {{ rev.coverage_issue or 'None' }}
+                        </td>
+                        <td style="font-size: 0.9rem; max-width: 300px; white-space: normal; line-height: 1.4; color: var(--text-secondary);">
+                            {{ rev.recommended_actions or 'None' }}
+                        </td>
+                        <td style="font-weight: 700; color: var(--accent); font-size: 1.05rem;">${{ "%.2f"|format(rev.estimated_patient_cost) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 3rem; color: var(--text-secondary);">No pre-consultation visit coverage reviews found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% else %}
+<!-- Original Administrative Ledger & Filter -->
 <div class="card" style="margin-bottom: 2rem;">
     <form action="/insurance/warnings" method="get" style="display: flex; gap: 1rem; align-items: center;">
         <div style="flex: 1;">
@@ -65,4 +189,5 @@
         </table>
     </div>
 </div>
+{% endif %}
 {% endblock %}

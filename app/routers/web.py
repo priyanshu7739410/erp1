@@ -161,7 +161,7 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: Optional[Us
         return RedirectResponse(url="/login")
         
     if user.role == "patient":
-        p = db.query(Patient).filter((Patient.email == user.email) | (Patient.name == user.username)).first()
+        p = db.query(Patient).filter((Patient.email.ilike(user.email.strip())) | (Patient.name == user.username)).first()
         pid = p.id if p else 0
         appointments = db.query(Appointment).filter(Appointment.patient_id == pid).order_by(Appointment.scheduled_start).all()
         invoices = db.query(Invoice).filter(Invoice.patient_id == pid).all()
@@ -176,7 +176,7 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: Optional[Us
             "user": user, "stats": stats, "appointments": appointments, "invoices": invoices
         })
     elif user.role == "doctor":
-        d = db.query(Doctor).filter((Doctor.email == user.email) | (Doctor.first_name == user.username) | (Doctor.last_name == user.username)).first()
+        d = db.query(Doctor).filter((Doctor.email.ilike(user.email.strip())) | (Doctor.first_name == user.username) | (Doctor.last_name == user.username)).first()
         did = d.id if d else 0
         appointments = db.query(Appointment).filter(Appointment.doctor_id == did).order_by(Appointment.scheduled_start).all()
         stats = {
@@ -186,6 +186,48 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: Optional[Us
         }
         return templates.TemplateResponse(request, "dashboard_doctor.html", {
             "user": user, "stats": stats, "appointments": appointments
+        })
+    elif user.role == "nurse":
+        patients_count = db.query(Patient).filter(Patient.is_active == True).count()
+        doctors_count = db.query(Doctor).filter(Doctor.is_active == True).count()
+        appointments_count = db.query(Appointment).filter(Appointment.status != "cancelled").count()
+        recent_appointments = db.query(Appointment).order_by(Appointment.scheduled_start).limit(5).all()
+        stats = {
+            "patients_count": patients_count,
+            "doctors_count": doctors_count,
+            "appointments_count": appointments_count
+        }
+        return templates.TemplateResponse(request, "dashboard_nurse.html", {
+            "user": user, "stats": stats, "recent_appointments": recent_appointments
+        })
+    elif user.role == "pharmacist":
+        total_items = db.query(InventoryItem).filter(InventoryItem.is_active == True).count()
+        low_stock = db.query(InventoryItem).filter(InventoryItem.is_active == True, InventoryItem.quantity <= InventoryItem.reorder_level).count()
+        pending_prescriptions = db.query(Prescription).filter(Prescription.status == "active").all()
+        recent_items = db.query(InventoryItem).filter(InventoryItem.is_active == True).order_by(InventoryItem.name).limit(5).all()
+        stats = {
+            "total_items": total_items,
+            "low_stock": low_stock,
+            "pending_prescriptions_count": len(pending_prescriptions)
+        }
+        return templates.TemplateResponse(request, "dashboard_pharmacist.html", {
+            "user": user, "stats": stats, "pending_prescriptions": pending_prescriptions[:5], "recent_items": recent_items
+        })
+    elif user.role == "billing_officer":
+        patients_count = db.query(Patient).filter(Patient.is_active == True).count()
+        unpaid_invoices = db.query(Invoice).filter(Invoice.status == "pending").all()
+        paid_invoices = db.query(Invoice).filter(Invoice.status == "paid").all()
+        total_collected = sum(inv.total_amount for inv in paid_invoices)
+        total_pending = sum(inv.total_amount for inv in unpaid_invoices)
+        recent_payments = db.query(Payment).order_by(Payment.paid_at.desc()).limit(5).all()
+        stats = {
+            "patients_count": patients_count,
+            "unpaid_count": len(unpaid_invoices),
+            "total_collected": f"{total_collected:.2f}",
+            "total_pending": f"{total_pending:.2f}"
+        }
+        return templates.TemplateResponse(request, "dashboard_billing.html", {
+            "user": user, "stats": stats, "unpaid_invoices": unpaid_invoices[:5], "recent_payments": recent_payments
         })
 
     patients_count = db.query(Patient).filter(Patient.is_active == True).count()
@@ -215,6 +257,8 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: Optional[Us
 def patients_list(request: Request, q: Optional[str] = None, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
     if not user:
         return RedirectResponse(url="/login")
+    if user.role not in ["admin", "doctor", "receptionist", "nurse", "billing_officer"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
     
     query = db.query(Patient).filter(Patient.is_active == True)
     if q:
@@ -228,6 +272,8 @@ def patients_list(request: Request, q: Optional[str] = None, db: Session = Depen
 def new_patient_page(request: Request, user: Optional[User] = Depends(get_web_user)):
     if not user:
         return RedirectResponse(url="/login")
+    if user.role not in ["admin", "receptionist"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
     return templates.TemplateResponse(request, "patient_form.html", {"user": user})
 
 @router.post("/patients/new")
@@ -242,8 +288,11 @@ def new_patient_post(
     emergency_contact: Optional[str] = Form(None),
     insurance_provider: Optional[str] = Form(None),
     medical_history_summary: Optional[str] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(get_web_user)
 ):
+    if not user or user.role not in ["admin", "receptionist"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
     data = PatientCreate(
         name=name, email=email if email else None, age=age, gender=gender, phone=phone,
         address=address, emergency_contact=emergency_contact, insurance_provider=insurance_provider,
@@ -256,6 +305,13 @@ def new_patient_post(
 def patient_detail_page(request: Request, patient_id: int, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
     if not user:
         return RedirectResponse(url="/login")
+    if user.role not in ["admin", "doctor", "nurse", "billing_officer", "patient"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
+    if user.role == "patient":
+        p = db.query(Patient).filter(Patient.email.ilike(user.email.strip())).first()
+        if not p or p.id != patient_id:
+            raise HTTPException(status_code=403, detail="Access Denied")
+            
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         return RedirectResponse(url="/patients")
@@ -266,6 +322,8 @@ def patient_detail_page(request: Request, patient_id: int, db: Session = Depends
 def doctors_list_page(request: Request, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
     if not user:
         return RedirectResponse(url="/login")
+    if user.role not in ["admin", "doctor", "receptionist", "nurse", "patient"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
     doctors = db.query(Doctor).filter(Doctor.is_active == True).all()
     return templates.TemplateResponse(request, "doctors_list.html", {"user": user, "doctors": doctors})
 
@@ -273,7 +331,21 @@ def doctors_list_page(request: Request, db: Session = Depends(get_db), user: Opt
 def appointments_list_page(request: Request, date: Optional[str] = None, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
     if not user:
         return RedirectResponse(url="/login")
+    if user.role not in ["admin", "doctor", "receptionist", "nurse", "patient"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
+        
     query = db.query(Appointment)
+    
+    # Scope appointments by user role
+    if user.role == "patient":
+        p = db.query(Patient).filter(Patient.email.ilike(user.email.strip())).first()
+        pid = p.id if p else 0
+        query = query.filter(Appointment.patient_id == pid)
+    elif user.role == "doctor":
+        d = db.query(Doctor).filter((Doctor.email.ilike(user.email.strip())) | (Doctor.first_name == user.username) | (Doctor.last_name == user.username)).first()
+        did = d.id if d else 0
+        query = query.filter(Appointment.doctor_id == did)
+        
     if date:
         try:
             target_date = datetime.strptime(date, "%Y-%m-%d")
@@ -282,14 +354,43 @@ def appointments_list_page(request: Request, date: Optional[str] = None, db: Ses
             query = query.filter(Appointment.scheduled_start >= day_start, Appointment.scheduled_start <= day_end)
         except ValueError:
             pass
+            
     appointments = query.order_by(Appointment.scheduled_start.desc()).all()
+    
+    # Calculate queue waiting numbers
+    for appt in appointments:
+        if appt.status == "checked_in":
+            from datetime import time as dt_time
+            start_date = appt.scheduled_start.date()
+            day_start = datetime.combine(start_date, dt_time.min)
+            day_end = datetime.combine(start_date, dt_time.max)
+            earlier_checked_in = db.query(Appointment).filter(
+                Appointment.doctor_id == appt.doctor_id,
+                Appointment.status == "checked_in",
+                Appointment.scheduled_start >= day_start,
+                Appointment.scheduled_start <= day_end,
+                Appointment.scheduled_start <= appt.scheduled_start
+            ).count()
+            appt.waiting_number = earlier_checked_in
+        else:
+            appt.waiting_number = None
+            
     return templates.TemplateResponse(request, "appointments_list.html", {"user": user, "appointments": appointments, "date_filter": date})
 
 @router.get("/appointments/new", response_class=HTMLResponse)
 def new_appointment_page(request: Request, patient_id: Optional[int] = None, doctor_id: Optional[int] = None, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
     if not user:
         return RedirectResponse(url="/login")
-    patients = db.query(Patient).filter(Patient.is_active == True).all()
+    if user.role not in ["admin", "receptionist", "patient"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
+        
+    if user.role == "patient":
+        p = db.query(Patient).filter(Patient.email.ilike(user.email.strip())).first()
+        patient_id = p.id if p else None
+        patients = [p] if p else []
+    else:
+        patients = db.query(Patient).filter(Patient.is_active == True).all()
+        
     doctors = db.query(Doctor).filter(Doctor.is_active == True).all()
     return templates.TemplateResponse(request, "appointment_form.html", {
         "user": user, "patients": patients, "doctors": doctors,
@@ -305,8 +406,15 @@ def new_appointment_post(
     duration_minutes: int = Form(30),
     reason: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(get_web_user)
 ):
+    if not user or user.role not in ["admin", "receptionist", "patient"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
+    if user.role == "patient":
+        p = db.query(Patient).filter(Patient.email.ilike(user.email.strip())).first()
+        if not p or p.id != patient_id:
+            raise HTTPException(status_code=403, detail="Access Denied")
     try:
         start_dt = datetime.fromisoformat(scheduled_start)
         from datetime import timedelta
@@ -328,9 +436,21 @@ def new_appointment_post(
 def appointment_detail_page(request: Request, appt_id: int, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
     if not user:
         return RedirectResponse(url="/login")
+    if user.role not in ["admin", "doctor", "receptionist", "nurse", "patient"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
     appt = db.query(Appointment).filter(Appointment.id == appt_id).first()
     if not appt:
         return RedirectResponse(url="/appointments?error=Appointment+not+found")
+    if user.role == "patient":
+        p = db.query(Patient).filter(Patient.email.ilike(user.email.strip())).first()
+        pid = p.id if p else 0
+        if appt.patient_id != pid:
+            raise HTTPException(status_code=403, detail="Access Denied")
+    elif user.role == "doctor":
+        d = db.query(Doctor).filter(Doctor.email.ilike(user.email.strip())).first()
+        did = d.id if d else 0
+        if appt.doctor_id != did:
+            raise HTTPException(status_code=403, detail="Access Denied")
     
     # Get associated insurance coverage review
     coverage_review = db.query(CoverageReview).filter(CoverageReview.appointment_id == appt_id).first()
@@ -342,7 +462,9 @@ def appointment_detail_page(request: Request, appt_id: int, db: Session = Depend
     })
 
 @router.post("/appointments/{appt_id}/checkin")
-def checkin_appointment(appt_id: int, db: Session = Depends(get_db)):
+def checkin_appointment(appt_id: int, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
+    if not user or user.role not in ["admin", "receptionist", "nurse"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
     appt = db.query(Appointment).filter(Appointment.id == appt_id).first()
     if appt and appt.status == "scheduled":
         appt.status = "checked_in"
@@ -350,7 +472,17 @@ def checkin_appointment(appt_id: int, db: Session = Depends(get_db)):
     return RedirectResponse(url="/appointments", status_code=status.HTTP_302_FOUND)
 
 @router.post("/appointments/{appt_id}/cancel")
-def cancel_appointment_web(appt_id: int, db: Session = Depends(get_db)):
+def cancel_appointment_web(appt_id: int, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
+    if not user or user.role not in ["admin", "receptionist", "patient"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
+    appt = db.query(Appointment).filter(Appointment.id == appt_id).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    if user.role == "patient":
+        p = db.query(Patient).filter(Patient.email.ilike(user.email.strip())).first()
+        pid = p.id if p else 0
+        if appt.patient_id != pid:
+            raise HTTPException(status_code=403, detail="Access Denied")
     cancel_appointment(db, appt_id)
     return RedirectResponse(url="/appointments", status_code=status.HTTP_302_FOUND)
 
@@ -358,6 +490,8 @@ def cancel_appointment_web(appt_id: int, db: Session = Depends(get_db)):
 def new_medical_record_page(request: Request, appointment_id: Optional[int] = None, patient_id: Optional[int] = None, doctor_id: Optional[int] = None, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
     if not user:
         return RedirectResponse(url="/login")
+    if user.role not in ["admin", "doctor", "nurse"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
     if appointment_id and (not patient_id or not doctor_id):
         appt = db.query(Appointment).filter(Appointment.id == appointment_id).first()
         if appt:
@@ -376,8 +510,11 @@ def new_medical_record_post(
     diagnosis: str = Form(...),
     notes: Optional[str] = Form(None),
     treatment_plan: Optional[str] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(get_web_user)
 ):
+    if not user or user.role not in ["admin", "doctor", "nurse"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
     data = MedicalRecordCreate(
         patient_id=patient_id, doctor_id=doctor_id, appointment_id=appointment_id if appointment_id else None,
         diagnosis=diagnosis, notes=notes, treatment_plan=treatment_plan
@@ -391,7 +528,14 @@ def new_medical_record_post(
 def billing_page(request: Request, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
     if not user:
         return RedirectResponse(url="/login")
-    invoices = db.query(Invoice).order_by(Invoice.invoice_date.desc()).all()
+    if user.role == "patient":
+        p = db.query(Patient).filter(Patient.email.ilike(user.email.strip())).first()
+        pid = p.id if p else 0
+        invoices = db.query(Invoice).filter(Invoice.patient_id == pid).order_by(Invoice.invoice_date.desc()).all()
+    elif user.role in ["admin", "billing_officer"]:
+        invoices = db.query(Invoice).order_by(Invoice.invoice_date.desc()).all()
+    else:
+        raise HTTPException(status_code=403, detail="Access Denied")
     return templates.TemplateResponse(request, "billing_list.html", {"user": user, "invoices": invoices})
 
 @router.get("/billing/invoices/{invoice_id}", response_class=HTMLResponse)
@@ -401,6 +545,13 @@ def invoice_detail_page(request: Request, invoice_id: int, db: Session = Depends
     invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if not invoice:
         return RedirectResponse(url="/billing")
+    if user.role == "patient":
+        p = db.query(Patient).filter(Patient.email.ilike(user.email.strip())).first()
+        pid = p.id if p else 0
+        if invoice.patient_id != pid:
+            raise HTTPException(status_code=403, detail="Access Denied")
+    elif user.role not in ["admin", "billing_officer"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
     return templates.TemplateResponse(request, "invoice_detail.html", {"user": user, "invoice": invoice})
 
 @router.post("/billing/payments")
@@ -410,8 +561,19 @@ def record_payment_web(
     amount_paid: float = Form(...),
     method: str = Form(...),
     reference_number: Optional[str] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(get_web_user)
 ):
+    if not user or user.role not in ["admin", "billing_officer", "patient"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
+    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    if user.role == "patient":
+        p = db.query(Patient).filter(Patient.email.ilike(user.email.strip())).first()
+        pid = p.id if p else 0
+        if invoice.patient_id != pid:
+            raise HTTPException(status_code=403, detail="Access Denied")
     try:
         data = PaymentCreate(invoice_id=invoice_id, amount_paid=amount_paid, method=method, reference_number=reference_number)
         record_payment(db, data)
@@ -421,21 +583,42 @@ def record_payment_web(
         return templates.TemplateResponse(request, "billing_list.html", {"invoices": invoices, "error": str(e)})
 
 @router.get("/insurance", response_class=HTMLResponse)
-def insurance_redirect():
+def insurance_redirect(user: Optional[User] = Depends(get_web_user)):
+    if not user or user.role not in ["admin", "receptionist", "billing_officer", "patient"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
     return RedirectResponse(url="/insurance/warnings")
 
 @router.get("/insurance/warnings", response_class=HTMLResponse)
 def insurance_warnings_page(request: Request, status: str = "flagged", db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
     if not user:
         return RedirectResponse(url="/login")
-    reviews = db.query(CoverageReview).filter(CoverageReview.status == status).order_by(CoverageReview.review_date.desc()).all()
-    return templates.TemplateResponse(request, "insurance_warnings.html", {"user": user, "reviews": reviews, "status_filter": status})
+    if user.role not in ["admin", "receptionist", "billing_officer", "patient"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
+        
+    policy = None
+    if user.role == "patient":
+        p = db.query(Patient).filter(Patient.email.ilike(user.email.strip())).first()
+        pid = p.id if p else 0
+        policy = db.query(InsurancePolicy).filter(InsurancePolicy.patient_id == pid).first()
+        reviews = db.query(CoverageReview).filter(CoverageReview.patient_id == pid).order_by(CoverageReview.review_date.desc()).all()
+    else:
+        reviews = db.query(CoverageReview).filter(CoverageReview.status == status).order_by(CoverageReview.review_date.desc()).all()
+        
+    return templates.TemplateResponse(request, "insurance_warnings.html", {
+        "user": user, "reviews": reviews, "policy": policy, "status_filter": status
+    })
 
 @router.get("/insurance/upload", response_class=HTMLResponse)
 def insurance_upload_page(request: Request, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
     if not user:
         return RedirectResponse(url="/login")
-    patients = db.query(Patient).filter(Patient.is_active == True).all()
+    if user.role not in ["admin", "receptionist", "patient"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
+    if user.role == "patient":
+        p = db.query(Patient).filter(Patient.email.ilike(user.email.strip())).first()
+        patients = [p] if p else []
+    else:
+        patients = db.query(Patient).filter(Patient.is_active == True).all()
     return templates.TemplateResponse(request, "policy_upload.html", {"user": user, "patients": patients})
 
 @router.post("/insurance/upload")
@@ -443,8 +626,16 @@ def insurance_upload_post(
     request: Request,
     patient_id: int = Form(...),
     policy_text: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(get_web_user)
 ):
+    if not user or user.role not in ["admin", "receptionist", "patient"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
+    if user.role == "patient":
+        p = db.query(Patient).filter(Patient.email.ilike(user.email.strip())).first()
+        pid = p.id if p else 0
+        if patient_id != pid:
+            raise HTTPException(status_code=403, detail="Access Denied")
     try:
         extract_policy_from_text(db, patient_id, policy_text)
         return RedirectResponse(url="/insurance/warnings", status_code=status.HTTP_302_FOUND)
@@ -456,6 +647,8 @@ def insurance_upload_post(
 def inventory_page(request: Request, category: Optional[str] = None, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
     if not user:
         return RedirectResponse(url="/login")
+    if user.role not in ["admin", "doctor", "pharmacist"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
     query = db.query(InventoryItem).filter(InventoryItem.is_active == True)
     if category:
         query = query.filter(InventoryItem.category == category)
@@ -469,6 +662,8 @@ def inventory_page(request: Request, category: Optional[str] = None, db: Session
 def new_inventory_page(request: Request, user: Optional[User] = Depends(get_web_user)):
     if not user:
         return RedirectResponse(url="/login")
+    if user.role not in ["admin", "pharmacist"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
     return templates.TemplateResponse(request, "inventory_form.html", {"user": user})
 
 @router.post("/inventory/new")
@@ -482,8 +677,11 @@ def new_inventory_post(
     reorder_level: int = Form(10),
     price: float = Form(15.00),
     supplier: Optional[str] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(get_web_user)
 ):
+    if not user or user.role not in ["admin", "pharmacist"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
     try:
         data = InventoryItemCreate(
             name=name, sku=sku, category=category, unit=unit, quantity=quantity, reorder_level=reorder_level, price=price, supplier=supplier
@@ -497,8 +695,14 @@ def new_inventory_post(
 def new_prescription_page(request: Request, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
     if not user:
         return RedirectResponse(url="/login")
+    if user.role not in ["admin", "doctor"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
     patients = db.query(Patient).filter(Patient.is_active == True).all()
-    doctors = db.query(Doctor).filter(Doctor.is_active == True).all()
+    if user.role == "doctor":
+        d = db.query(Doctor).filter(Doctor.email.ilike(user.email.strip())).first()
+        doctors = [d] if d else []
+    else:
+        doctors = db.query(Doctor).filter(Doctor.is_active == True).all()
     return templates.TemplateResponse(request, "prescription_form.html", {"user": user, "patients": patients, "doctors": doctors})
 
 @router.post("/prescriptions/new")
@@ -511,8 +715,16 @@ def new_prescription_post(
     frequency: str = Form(...),
     duration_days: int = Form(7),
     notes: Optional[str] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(get_web_user)
 ):
+    if not user or user.role not in ["admin", "doctor"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
+    if user.role == "doctor":
+        d = db.query(Doctor).filter(Doctor.email.ilike(user.email.strip())).first()
+        did = d.id if d else 0
+        if doctor_id != did:
+            raise HTTPException(status_code=403, detail="Access Denied")
     data = PrescriptionCreate(
         patient_id=patient_id, doctor_id=doctor_id, medication_name=medication_name,
         dosage=dosage, frequency=frequency, duration_days=duration_days, notes=notes
@@ -524,6 +736,8 @@ def new_prescription_post(
 def dispense_prescription_web(pres_id: int, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
     if not user:
         return RedirectResponse(url="/login")
+    if user.role not in ["admin", "pharmacist"]:
+        raise HTTPException(status_code=403, detail="Access Denied")
     try:
         dispense_prescription(db, pres_id, dispensed_by=user.username)
     except Exception:

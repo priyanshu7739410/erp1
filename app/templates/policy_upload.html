@@ -8,6 +8,13 @@
     <p style="color: var(--text-secondary); margin-bottom: 2rem;">Rule-based local NLP extraction pipeline for free policy reading & indexing</p>
 
     <form action="/insurance/upload" method="post">
+        {% if user.role == 'patient' %}
+        <div class="form-group">
+            <label class="form-label">Patient Name</label>
+            <input type="text" class="form-control" value="{{ patients[0].name if patients else 'Unknown' }}" disabled>
+            <input type="hidden" name="patient_id" value="{{ patients[0].id if patients else 0 }}">
+        </div>
+        {% else %}
         <div class="form-group">
             <label for="patient_id" class="form-label">Select Patient *</label>
             <select id="patient_id" name="patient_id" class="form-control" required>
@@ -18,6 +25,7 @@
                 {% endfor %}
             </select>
         </div>
+        {% endif %}
 
         <div class="form-group">
             <label for="policy_text" class="form-label">Paste Raw Policy Document Clauses or Summary *</label>

@@ -9,7 +9,9 @@
         <p style="color: var(--text-secondary);">Manage medication stock levels, dispensing, reorder alerts, and purchase orders</p>
     </div>
     <div style="display: flex; gap: 1rem;">
+        {% if user.role in ['admin', 'pharmacist'] %}
         <a href="/inventory/new" class="btn btn-primary">+ Add Inventory Item</a>
+        {% endif %}
         <a href="/prescriptions/new" class="btn btn-secondary">+ Write Prescription</a>
     </div>
 </div>
@@ -36,7 +38,6 @@
                         <th>Category</th>
                         <th>Stock / Unit</th>
                         <th>Reorder Alert</th>
-                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -57,12 +58,9 @@
                             <span class="badge badge-success">Optimal</span>
                             {% endif %}
                         </td>
-                        <td>
-                            <a href="/inventory/{{ item.id }}" class="btn btn-secondary" style="padding: 0.2rem 0.6rem; font-size: 0.8rem;">Stock Op</a>
-                        </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No inventory items found.</td></tr>
+                    <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No inventory items found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -83,7 +81,7 @@
                 </div>
                 <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
                     <span>Pat #{{ pres.patient_id }} | Doc #{{ pres.doctor_id }}</span>
-                    {% if pres.status == 'active' %}
+                    {% if pres.status == 'active' and user.role in ['admin', 'pharmacist'] %}
                     <form action="/prescriptions/{{ pres.id }}/dispense" method="post" style="display: inline;">
                         <button type="submit" class="btn btn-primary" style="padding: 0.2rem 0.6rem; font-size: 0.8rem;">Dispense</button>
                     </form>

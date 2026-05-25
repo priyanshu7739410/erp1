@@ -19,6 +19,13 @@
             </select>
         </div>
 
+        {% if user.role == 'doctor' %}
+        <div class="form-group">
+            <label class="form-label">Prescribing Physician</label>
+            <input type="text" class="form-control" value="Dr. {{ doctors[0].first_name }} {{ doctors[0].last_name }} ({{ doctors[0].specialty }})" disabled>
+            <input type="hidden" name="doctor_id" value="{{ doctors[0].id if doctors else 0 }}">
+        </div>
+        {% else %}
         <div class="form-group">
             <label for="doctor_id" class="form-label">Select Prescribing Physician *</label>
             <select id="doctor_id" name="doctor_id" class="form-control" required>
@@ -29,6 +36,7 @@
                 {% endfor %}
             </select>
         </div>
+        {% endif %}
 
         <div class="form-group">
             <label for="medication_name" class="form-label">Medication Name *</label>

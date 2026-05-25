@@ -25,10 +25,15 @@
             <li><a href="/patients" class="nav-link">Patients</a></li>
             <li><a href="/appointments" class="nav-link">Schedule</a></li>
             <li><a href="/inventory" class="nav-link">Pharmacy</a></li>
-            {% elif user.role == 'receptionist' %}
+            {% elif user.role == 'receptionist' or user.role == 'nurse' %}
             <li><a href="/patients" class="nav-link">Patients</a></li>
             <li><a href="/doctors" class="nav-link">Doctors</a></li>
             <li><a href="/appointments" class="nav-link">Appointments</a></li>
+            {% elif user.role == 'pharmacist' %}
+            <li><a href="/inventory" class="nav-link">Pharmacy</a></li>
+            {% elif user.role == 'billing_officer' %}
+            <li><a href="/patients" class="nav-link">Patients</a></li>
+            <li><a href="/billing" class="nav-link">Billing</a></li>
             {% else %}
             <li><a href="/patients" class="nav-link">Patients</a></li>
             <li><a href="/doctors" class="nav-link">Doctors</a></li>

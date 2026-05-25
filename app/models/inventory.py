@@ -42,6 +42,10 @@ class Prescription(Base):
     notes = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # Relationships
+    patient = relationship("Patient")
+    doctor = relationship("Doctor")
+
 class PurchaseOrder(Base):
     __tablename__ = "purchase_orders"
 
