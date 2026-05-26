@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Add New Doctor{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h1 style="margin-bottom: 0.5rem; color: var(--accent);">Add New Doctor</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Create a login account and doctor profile for attending physicians</p>
+
+    <form action="/doctors/new" method="post">
+        <!-- Section: Credentials -->
+        <h3 style="font-size: 1.2rem; color: #fff; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">User Account Credentials</h3>
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 2rem;">
+            <div class="form-group">
+                <label for="username" class="form-label">Username *</label>
+                <input type="text" id="username" name="username" class="form-control" required placeholder="Choose username (e.g. dr_sarah)">
+            </div>
+            <div class="form-group">
+                <label for="password" class="form-label">Password *</label>
+                <input type="password" id="password" name="password" class="form-control" required placeholder="Choose a temporary password">
+            </div>
+        </div>
+
+        <!-- Section: Doctor Profile -->
+        <h3 style="font-size: 1.2rem; color: #fff; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Doctor Profile Information</h3>
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+            <div class="form-group">
+                <label for="first_name" class="form-label">First Name *</label>
+                <input type="text" id="first_name" name="first_name" class="form-control" required placeholder="Sarah">
+            </div>
+            <div class="form-group">
+                <label for="last_name" class="form-label">Last Name *</label>
+                <input type="text" id="last_name" name="last_name" class="form-control" required placeholder="Jenkins">
+            </div>
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address *</label>
+                <input type="email" id="email" name="email" class="form-control" required placeholder="sarah.jenkins@hospital.erp">
+            </div>
+            <div class="form-group">
+                <label for="phone" class="form-label">Phone Number *</label>
+                <input type="text" id="phone" name="phone" class="form-control" required placeholder="+1 (555) 019-8891">
+            </div>
+            <div class="form-group">
+                <label for="specialty" class="form-label">Specialty *</label>
+                <input type="text" id="specialty" name="specialty" class="form-control" required placeholder="Cardiology / Pediatrics / General Medicine">
+            </div>
+            <div class="form-group">
+                <label for="license_number" class="form-label">Medical License Number *</label>
+                <input type="text" id="license_number" name="license_number" class="form-control" required placeholder="LIC-CARDIO-8891">
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+                <label for="department_id" class="form-label">Department Assignment</label>
+                <select id="department_id" name="department_id" class="form-control">
+                    <option value="">No Department Assigned</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+            <a href="/doctors" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary" style="padding: 0.8rem 2rem;">Create Doctor Profile</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

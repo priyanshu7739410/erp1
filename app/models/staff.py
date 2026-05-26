@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Float
 from app.database.session import Base
 
 class Staff(Base):
@@ -13,3 +13,6 @@ class Staff(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     is_active = Column(Boolean, default=True)
+    salary = Column(Float, nullable=True)
+    shift_time = Column(String, default="day", nullable=True)
+

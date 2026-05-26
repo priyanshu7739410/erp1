@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if action == 'edit' %}Edit Staff Member{% else %}Add Staff Member{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h1 style="margin-bottom: 0.5rem; color: var(--accent);">
+        {% if action == 'edit' %}Edit Staff Member: {{ staff.first_name }} {{ staff.last_name }}{% else %}Add Staff Member{% endif %}
+    </h1>
+    <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+        {% if action == 'edit' %}Modify payroll, scheduling shift, and contact information{% else %}Create a login account and administrative profile for a new staff member{% endif %}
+    </p>
+
+    <form action="{% if action == 'edit' %}/staff/{{ staff.id }}/edit{% else %}/staff/new{% endif %}" method="post">
+        <!-- Section: Credentials -->
+        <h3 style="font-size: 1.2rem; color: #fff; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">User Account Credentials</h3>
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 2rem;">
+            <div class="form-group">
+                <label for="username" class="form-label">Username *</label>
+                <input type="text" id="username" name="username" class="form-control" required 
+                       value="{% if action == 'edit' and user_record %}{{ user_record.username }}{% endif %}" placeholder="e.g. claire_frontdesk">
+            </div>
+            <div class="form-group">
+                <label for="password" class="form-label">Password {% if action != 'edit' %}*{% else %}(Leave blank to keep current){% endif %}</label>
+                <input type="password" id="password" name="password" class="form-control" {% if action != 'edit' %}required{% endif %} placeholder="Password">
+            </div>
+        </div>
+
+        <!-- Section: Staff Details -->
+        <h3 style="font-size: 1.2rem; color: #fff; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Staff Details & Schedule</h3>
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+            <div class="form-group">
+                <label for="first_name" class="form-label">First Name *</label>
+                <input type="text" id="first_name" name="first_name" class="form-control" required 
+                       value="{% if action == 'edit' %}{{ staff.first_name }}{% endif %}" placeholder="Claire">
+            </div>
+            <div class="form-group">
+                <label for="last_name" class="form-label">Last Name *</label>
+                <input type="text" id="last_name" name="last_name" class="form-control" required 
+                       value="{% if action == 'edit' %}{{ staff.last_name }}{% endif %}" placeholder="Redfield">
+            </div>
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address *</label>
+                <input type="email" id="email" name="email" class="form-control" required 
+                       value="{% if action == 'edit' %}{{ staff.email }}{% endif %}" placeholder="claire@hospital.erp">
+            </div>
+            <div class="form-group">
+                <label for="phone" class="form-label">Phone Number *</label>
+                <input type="text" id="phone" name="phone" class="form-control" required 
+                       value="{% if action == 'edit' %}{{ staff.phone }}{% endif %}" placeholder="+1 (555) 019-8811">
+            </div>
+            <div class="form-group">
+                <label for="employee_id" class="form-label">Employee ID *</label>
+                <input type="text" id="employee_id" name="employee_id" class="form-control" required 
+                       value="{% if action == 'edit' %}{{ staff.employee_id }}{% endif %}" placeholder="EMP-REC-001">
+            </div>
+            <div class="form-group">
+                <label for="role" class="form-label">Staff Role *</label>
+                <select id="role" name="role" class="form-control" required>
+                    <option value="receptionist" {% if action == 'edit' and staff.role == 'receptionist' %}selected{% endif %}>Receptionist</option>
+                    <option value="nurse" {% if action == 'edit' and staff.role == 'nurse' %}selected{% endif %}>Nurse</option>
+                    <option value="pharmacist" {% if action == 'edit' and staff.role == 'pharmacist' %}selected{% endif %}>Pharmacist</option>
+                    <option value="billing_officer" {% if action == 'edit' and staff.role == 'billing_officer' %}selected{% endif %}>Billing Officer</option>
+                    <option value="admin" {% if action == 'edit' and staff.role == 'admin' %}selected{% endif %}>Administrator</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="salary" class="form-label">Monthly Salary ($ USD)</label>
+                <input type="number" step="0.01" min="0" id="salary" name="salary" class="form-control" 
+                       value="{% if action == 'edit' and staff.salary is not none %}{{ staff.salary }}{% endif %}" placeholder="3500.00">
+            </div>
+            <div class="form-group">
+                <label for="shift_time" class="form-label">Shift Schedule *</label>
+                <select id="shift_time" name="shift_time" class="form-control" required>
+                    <option value="day" {% if action == 'edit' and staff.shift_time == 'day' %}selected{% endif %}>☀️ Day Shift</option>
+                    <option value="night" {% if action == 'edit' and staff.shift_time == 'night' %}selected{% endif %}>🌙 Night Shift</option>
+                </select>
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+                <label for="department_id" class="form-label">Department Assignment</label>
+                <select id="department_id" name="department_id" class="form-control">
+                    <option value="">No Department Assigned</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.id }}" {% if action == 'edit' and staff.department_id == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+            <a href="/staff" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary" style="padding: 0.8rem 2rem;">
+                {% if action == 'edit' %}Save Changes{% else %}Create Staff Profile{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

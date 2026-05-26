@@ -15,6 +15,8 @@ from app.models.medical_record import MedicalRecord
 from app.models.billing import Invoice, Payment
 from app.models.insurance import CoverageReview, InsurancePolicy
 from app.models.inventory import InventoryItem, Prescription
+from app.models.department import Department
+from app.models.staff import Staff
 from app.schemas.user import UserCreate
 from app.schemas.patient import PatientCreate
 from app.schemas.appointment import AppointmentCreate
@@ -232,6 +234,7 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: Optional[Us
 
     patients_count = db.query(Patient).filter(Patient.is_active == True).count()
     doctors_count = db.query(Doctor).filter(Doctor.is_active == True).count()
+    staff_count = db.query(Staff).filter(Staff.is_active == True).count()
     appointments_count = db.query(Appointment).filter(Appointment.status != "cancelled").count()
     
     pending_invoices = db.query(Invoice).filter(Invoice.status == "pending").all()
@@ -243,6 +246,7 @@ def dashboard(request: Request, db: Session = Depends(get_db), user: Optional[Us
     stats = {
         "patients_count": patients_count,
         "doctors_count": doctors_count,
+        "staff_count": staff_count,
         "appointments_count": appointments_count,
         "pending_revenue": f"{pending_revenue:.2f}"
     }
@@ -743,3 +747,262 @@ def dispense_prescription_web(pres_id: int, db: Session = Depends(get_db), user:
     except Exception:
         pass
     return RedirectResponse(url="/inventory", status_code=status.HTTP_302_FOUND)
+
+@router.get("/doctors/new", response_class=HTMLResponse)
+def new_doctor_page(request: Request, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
+    if not user or user.role != "admin":
+        return RedirectResponse(url="/login")
+    departments = db.query(Department).all()
+    return templates.TemplateResponse(request, "doctor_form.html", {"user": user, "departments": departments})
+
+@router.post("/doctors/new")
+def new_doctor_post(
+    request: Request,
+    username: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    specialty: str = Form(...),
+    license_number: str = Form(...),
+    phone: str = Form(...),
+    department_id: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(get_web_user)
+):
+    if not user or user.role != "admin":
+        raise HTTPException(status_code=403, detail="Access Denied")
+    try:
+        # Check existing user
+        existing_user = db.query(User).filter((User.username == username) | (User.email == email)).first()
+        if existing_user:
+            raise ValueError("Username or email already registered")
+            
+        existing_doctor = db.query(Doctor).filter((Doctor.license_number == license_number) | (Doctor.email == email)).first()
+        if existing_doctor:
+            raise ValueError("Doctor with this license or email already exists")
+
+        # Create user
+        from app.auth.hashing import get_password_hash
+        hashed_password = get_password_hash(password)
+        new_user = User(
+            username=username,
+            email=email,
+            hashed_password=hashed_password,
+            role="doctor",
+            is_active=True
+        )
+        db.add(new_user)
+        
+        # Create doctor
+        dept_id = int(department_id) if (department_id and department_id.strip()) else None
+        new_doctor = Doctor(
+            first_name=first_name,
+            last_name=last_name,
+            specialty=specialty,
+            license_number=license_number,
+            phone=phone,
+            email=email,
+            department_id=dept_id,
+            is_active=True
+        )
+        db.add(new_doctor)
+        db.commit()
+        return RedirectResponse(url="/doctors", status_code=status.HTTP_302_FOUND)
+    except Exception as e:
+        db.rollback()
+        departments = db.query(Department).all()
+        return templates.TemplateResponse(request, "doctor_form.html", {
+            "user": user, "departments": departments, "error": str(e)
+        })
+
+@router.get("/staff", response_class=HTMLResponse)
+def staff_list_page(request: Request, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
+    if not user or user.role != "admin":
+        return RedirectResponse(url="/login")
+    staff_members = db.query(Staff).order_by(Staff.is_active.desc(), Staff.first_name).all()
+    return templates.TemplateResponse(request, "staff_list.html", {"user": user, "staff_members": staff_members})
+
+@router.get("/staff/new", response_class=HTMLResponse)
+def new_staff_page(request: Request, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
+    if not user or user.role != "admin":
+        return RedirectResponse(url="/login")
+    departments = db.query(Department).all()
+    return templates.TemplateResponse(request, "staff_form.html", {"user": user, "departments": departments, "action": "new"})
+
+@router.post("/staff/new")
+def new_staff_post(
+    request: Request,
+    username: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    role: str = Form(...),
+    employee_id: str = Form(...),
+    phone: str = Form(...),
+    department_id: Optional[str] = Form(None),
+    salary: Optional[float] = Form(None),
+    shift_time: str = Form("day"),
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(get_web_user)
+):
+    if not user or user.role != "admin":
+        raise HTTPException(status_code=403, detail="Access Denied")
+    try:
+        # Validate existence
+        existing_user = db.query(User).filter((User.username == username) | (User.email == email)).first()
+        if existing_user:
+            raise ValueError("Username or email already registered")
+            
+        existing_staff = db.query(Staff).filter((Staff.employee_id == employee_id) | (Staff.email == email)).first()
+        if existing_staff:
+            raise ValueError("Staff member with this employee ID or email already exists")
+
+        # Create user
+        from app.auth.hashing import get_password_hash
+        hashed_password = get_password_hash(password)
+        new_user = User(
+            username=username,
+            email=email,
+            hashed_password=hashed_password,
+            role=role,
+            is_active=True
+        )
+        db.add(new_user)
+
+        # Create staff
+        dept_id = int(department_id) if (department_id and department_id.strip()) else None
+        new_staff = Staff(
+            first_name=first_name,
+            last_name=last_name,
+            role=role,
+            employee_id=employee_id,
+            phone=phone,
+            email=email,
+            department_id=dept_id,
+            salary=salary,
+            shift_time=shift_time,
+            is_active=True
+        )
+        db.add(new_staff)
+        db.commit()
+        return RedirectResponse(url="/staff", status_code=status.HTTP_302_FOUND)
+    except Exception as e:
+        db.rollback()
+        departments = db.query(Department).all()
+        return templates.TemplateResponse(request, "staff_form.html", {
+            "user": user, "departments": departments, "error": str(e), "action": "new"
+        })
+
+@router.get("/staff/{staff_id}/edit", response_class=HTMLResponse)
+def edit_staff_page(request: Request, staff_id: int, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
+    if not user or user.role != "admin":
+        return RedirectResponse(url="/login")
+    staff_member = db.query(Staff).filter(Staff.id == staff_id).first()
+    if not staff_member:
+        return RedirectResponse(url="/staff?error=Staff+member+not+found")
+    departments = db.query(Department).all()
+    
+    # Try to find corresponding user for login details
+    user_record = db.query(User).filter(User.email.ilike(staff_member.email.strip())).first()
+    
+    return templates.TemplateResponse(request, "staff_form.html", {
+        "user": user, 
+        "departments": departments, 
+        "staff": staff_member, 
+        "user_record": user_record,
+        "action": "edit"
+    })
+
+@router.post("/staff/{staff_id}/edit")
+def edit_staff_post(
+    request: Request,
+    staff_id: int,
+    username: str = Form(...),
+    email: str = Form(...),
+    password: Optional[str] = Form(None),
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    role: str = Form(...),
+    employee_id: str = Form(...),
+    phone: str = Form(...),
+    department_id: Optional[str] = Form(None),
+    salary: Optional[float] = Form(None),
+    shift_time: str = Form("day"),
+    db: Session = Depends(get_db),
+    user: Optional[User] = Depends(get_web_user)
+):
+    if not user or user.role != "admin":
+        raise HTTPException(status_code=403, detail="Access Denied")
+    staff_member = db.query(Staff).filter(Staff.id == staff_id).first()
+    if not staff_member:
+        return RedirectResponse(url="/staff?error=Staff+member+not+found")
+    
+    try:
+        # Check email/emp_id uniqueness (excluding self)
+        existing_staff = db.query(Staff).filter(
+            (Staff.id != staff_id) & ((Staff.employee_id == employee_id) | (Staff.email == email))
+        ).first()
+        if existing_staff:
+            raise ValueError("Employee ID or Email already registered to another staff member")
+
+        # Find corresponding user to update
+        user_record = db.query(User).filter(User.email.ilike(staff_member.email.strip())).first()
+        if user_record:
+            user_record.username = username
+            user_record.email = email
+            user_record.role = role
+            if password and password.strip():
+                from app.auth.hashing import get_password_hash
+                user_record.hashed_password = get_password_hash(password)
+        else:
+            # If no user exists yet, let's create one
+            from app.auth.hashing import get_password_hash
+            user_record = User(
+                username=username,
+                email=email,
+                hashed_password=get_password_hash(password if password else "staff123"),
+                role=role,
+                is_active=True
+            )
+            db.add(user_record)
+
+        # Update staff fields
+        dept_id = int(department_id) if (department_id and department_id.strip()) else None
+        staff_member.first_name = first_name
+        staff_member.last_name = last_name
+        staff_member.role = role
+        staff_member.employee_id = employee_id
+        staff_member.phone = phone
+        staff_member.email = email
+        staff_member.department_id = dept_id
+        staff_member.salary = salary
+        staff_member.shift_time = shift_time
+
+        db.commit()
+        return RedirectResponse(url="/staff", status_code=status.HTTP_302_FOUND)
+    except Exception as e:
+        db.rollback()
+        departments = db.query(Department).all()
+        return templates.TemplateResponse(request, "staff_form.html", {
+            "user": user, 
+            "departments": departments, 
+            "staff": staff_member,
+            "error": str(e), 
+            "action": "edit"
+        })
+
+@router.post("/staff/{staff_id}/toggle-active")
+def toggle_staff_active(staff_id: int, db: Session = Depends(get_db), user: Optional[User] = Depends(get_web_user)):
+    if not user or user.role != "admin":
+        raise HTTPException(status_code=403, detail="Access Denied")
+    staff_member = db.query(Staff).filter(Staff.id == staff_id).first()
+    if staff_member:
+        staff_member.is_active = not staff_member.is_active
+        # Also toggle active status of the corresponding User account
+        user_record = db.query(User).filter(User.email.ilike(staff_member.email.strip())).first()
+        if user_record:
+            user_record.is_active = staff_member.is_active
+        db.commit()
+    return RedirectResponse(url="/staff", status_code=status.HTTP_302_FOUND)

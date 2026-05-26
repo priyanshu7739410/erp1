@@ -9,6 +9,8 @@ class StaffCreate(BaseModel):
     phone: str
     email: EmailStr
     department_id: Optional[int] = None
+    salary: Optional[float] = None
+    shift_time: Optional[str] = "day"
 
 class StaffUpdate(BaseModel):
     first_name: Optional[str] = None
@@ -18,6 +20,8 @@ class StaffUpdate(BaseModel):
     email: Optional[EmailStr] = None
     department_id: Optional[int] = None
     is_active: Optional[bool] = None
+    salary: Optional[float] = None
+    shift_time: Optional[str] = None
 
 class StaffResponse(BaseModel):
     id: int
@@ -29,6 +33,9 @@ class StaffResponse(BaseModel):
     email: str
     department_id: Optional[int] = None
     is_active: bool
+    salary: Optional[float] = None
+    shift_time: Optional[str] = "day"
+
 
     class Config:
         from_attributes = True

@@ -114,7 +114,8 @@ def seed_database():
             staff_claire = Staff(
                 first_name="Claire", last_name="Redfield", role="receptionist",
                 employee_id="EMP-REC-001", phone="+1-555-8811",
-                email="claire.frontdesk@hospital.erp", department_id=depts["General Medicine"].id, is_active=True
+                email="claire.frontdesk@hospital.erp", department_id=depts["General Medicine"].id, is_active=True,
+                salary=3500.00, shift_time="day"
             )
             db.add(staff_claire)
 
@@ -123,7 +124,8 @@ def seed_database():
             staff_joy = Staff(
                 first_name="Joy", last_name="Miller", role="nurse",
                 employee_id="EMP-NUR-002", phone="+1-555-8822",
-                email="joy.nurse@hospital.erp", department_id=depts["Emergency & ICU"].id, is_active=True
+                email="joy.nurse@hospital.erp", department_id=depts["Emergency & ICU"].id, is_active=True,
+                salary=4200.00, shift_time="night"
             )
             db.add(staff_joy)
 
@@ -132,7 +134,8 @@ def seed_database():
             staff_david = Staff(
                 first_name="David", last_name="Wong", role="pharmacist",
                 employee_id="EMP-PHA-003", phone="+1-555-8833",
-                email="david.wong@hospital.erp", department_id=depts["General Medicine"].id, is_active=True
+                email="david.wong@hospital.erp", department_id=depts["General Medicine"].id, is_active=True,
+                salary=5000.00, shift_time="day"
             )
             db.add(staff_david)
 
@@ -141,7 +144,8 @@ def seed_database():
             staff_rachel = Staff(
                 first_name="Rachel", last_name="Green", role="billing_officer",
                 employee_id="EMP-BIL-004", phone="+1-555-8844",
-                email="rachel.finance@hospital.erp", department_id=depts["General Medicine"].id, is_active=True
+                email="rachel.finance@hospital.erp", department_id=depts["General Medicine"].id, is_active=True,
+                salary=3800.00, shift_time="day"
             )
             db.add(staff_rachel)
         db.commit()
